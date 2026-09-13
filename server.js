@@ -1,16 +1,26 @@
 // =========================================================
 // U.S TRAVEL & TOURS
 // MAIN BACKEND SERVER
+// PRODUCTION API SERVER
 // =========================================================
 
 const path = require("path");
+const fs = require("fs");
+
+// ---------------------------------------------------------
+// ENVIRONMENT
+// ---------------------------------------------------------
 
 require("dotenv").config({
     path: path.join(__dirname, "..", ".env")
 });
 
+// ---------------------------------------------------------
+// PACKAGES
+// ---------------------------------------------------------
+
 const express = require("express");
-const fs = require("fs");
+const cors = require("cors");
 
 // ---------------------------------------------------------
 // DATABASE
@@ -23,19 +33,19 @@ const { db } = require("./database");
 // ---------------------------------------------------------
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+const PORT =
+    process.env.PORT || 3000;
 
 // ---------------------------------------------------------
-// DIRECTORIES
+// ROOT / DATA DIRECTORY
 // ---------------------------------------------------------
 
-const ROOT_DIR = path.join(__dirname, "..");
+const ROOT_DIR =
+    path.join(__dirname, "..");
 
-const PUBLIC_DIR = path.join(ROOT_DIR, "public");
-const ASSETS_DIR = path.join(ROOT_DIR, "assets");
-const CSS_DIR = path.join(ROOT_DIR, "css");
-const JS_DIR = path.join(ROOT_DIR, "js");
-const DATA_DIR = path.join(ROOT_DIR, "data");
+const DATA_DIR =
+    path.join(ROOT_DIR, "data");
 
 // ---------------------------------------------------------
 // CREATE DATA DIRECTORY
@@ -50,45 +60,91 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 // =========================================================
+// CORS
+// FRONTEND = NETLIFY
+// BACKEND = RENDER
+// =========================================================
+
+const allowedOrigins = [
+
+    "https://us-travel-tours.netlify.app",
+
+    "http://localhost:3000",
+
+    "http://127.0.0.1:3000"
+
+].filter(Boolean);
+
+app.use(
+    cors({
+
+        origin: function (
+            origin,
+            callback
+        ) {
+
+            // Allow requests with no Origin
+            // such as server-to-server requests
+
+            if (!origin) {
+
+                return callback(
+                    null,
+                    true
+                );
+
+            }
+
+            if (
+                allowedOrigins.includes(
+                    origin
+                )
+            ) {
+
+                return callback(
+                    null,
+                    true
+                );
+
+            }
+
+            console.warn(
+                "CORS blocked:",
+                origin
+            );
+
+            return callback(
+                new Error(
+                    "CORS: Origin not allowed."
+                )
+            );
+
+        },
+
+        credentials: true
+
+    })
+);
+
+// =========================================================
 // BODY PARSERS
 // =========================================================
 
-app.use(express.json({
-    limit: "10mb"
-}));
-
-app.use(express.urlencoded({
-    extended: true,
-    limit: "10mb"
-}));
-
-// =========================================================
-// STATIC FILES
-// IMPORTANT
-// =========================================================
-
 app.use(
-    express.static(PUBLIC_DIR)
+    express.json({
+        limit: "10mb"
+    })
 );
 
 app.use(
-    "/assets",
-    express.static(ASSETS_DIR)
-);
-
-app.use(
-    "/css",
-    express.static(CSS_DIR)
-);
-
-app.use(
-    "/js",
-    express.static(JS_DIR)
+    express.urlencoded({
+        extended: true,
+        limit: "10mb"
+    })
 );
 
 // =========================================================
 // AUTHENTICATION
-// IMPORTANT: LOAD ONCE ONLY
 // =========================================================
 
 const authRoutes =
@@ -123,6 +179,9 @@ app.get(
                     ? "connected"
                     : "disconnected",
 
+            frontend:
+                "https://us-travel-tours.netlify.app",
+
             time:
                 new Date().toISOString()
 
@@ -143,6 +202,10 @@ app.use(
     applicationsRoutes
 );
 
+console.log(
+    "Application routes loaded."
+);
+
 // =========================================================
 // PAYMENTS
 // =========================================================
@@ -158,6 +221,10 @@ app.use(
 app.use(
     "/api/application-payment",
     paymentsRoutes
+);
+
+console.log(
+    "Payment routes loaded."
 );
 
 // =========================================================
@@ -180,7 +247,9 @@ const chatPath =
         "chat.js"
     );
 
-if (fs.existsSync(chatPath)) {
+if (
+    fs.existsSync(chatPath)
+) {
 
     try {
 
@@ -227,7 +296,9 @@ const contactPath =
         "contact.js"
     );
 
-if (fs.existsSync(contactPath)) {
+if (
+    fs.existsSync(contactPath)
+) {
 
     try {
 
@@ -259,6 +330,12 @@ if (fs.existsSync(contactPath)) {
 
     }
 
+} else {
+
+    console.warn(
+        "CONTACT: server/contact.js not found."
+    );
+
 }
 
 // =========================================================
@@ -271,7 +348,9 @@ const jobsPath =
         "jobs.js"
     );
 
-if (fs.existsSync(jobsPath)) {
+if (
+    fs.existsSync(jobsPath)
+) {
 
     try {
 
@@ -284,12 +363,14 @@ if (fs.existsSync(jobsPath)) {
         ) {
 
             // Main jobs API
+
             app.use(
                 "/api/jobs",
                 jobsRoutes
             );
 
-            // Compatibility API used by existing frontend
+            // Existing frontend compatibility API
+
             app.use(
                 "/api/job-applications",
                 jobsRoutes
@@ -310,69 +391,13 @@ if (fs.existsSync(jobsPath)) {
 
     }
 
+} else {
+
+    console.warn(
+        "JOBS: server/jobs.js not found."
+    );
+
 }
-
-// =========================================================
-// PAYMENT PAGE COMPATIBILITY
-// =========================================================
-
-app.get(
-    "/payment.html",
-    (req, res) => {
-
-        const paymentFile =
-            path.join(
-                PUBLIC_DIR,
-                "payments.html"
-            );
-
-        if (
-            !fs.existsSync(paymentFile)
-        ) {
-
-            return res.status(404).send(
-                "Payment page not found."
-            );
-
-        }
-
-        res.sendFile(
-            paymentFile
-        );
-
-    }
-);
-
-// =========================================================
-// APPLICATION PAGE
-// =========================================================
-
-app.get(
-    "/application.html",
-    (req, res) => {
-
-        const applicationFile =
-            path.join(
-                PUBLIC_DIR,
-                "application.html"
-            );
-
-        if (
-            !fs.existsSync(applicationFile)
-        ) {
-
-            return res.status(404).send(
-                "Application page not found."
-            );
-
-        }
-
-        res.sendFile(
-            applicationFile
-        );
-
-    }
-);
 
 // =========================================================
 // API 404
@@ -395,69 +420,16 @@ app.use(
 );
 
 // =========================================================
-// HTML FALLBACK
-//
-// IMPORTANT:
-// This MUST be AFTER express.static()
-// =========================================================
-
-app.get(
-    "/{*splat}",
-    (req, res) => {
-
-        const requestedPath =
-            path.join(
-                PUBLIC_DIR,
-                req.path
-            );
-
-        // Prevent path traversal
-        const normalizedPublic =
-            path.resolve(
-                PUBLIC_DIR
-            );
-
-        const normalizedRequested =
-            path.resolve(
-                requestedPath
-            );
-
-        if (
-            normalizedRequested.startsWith(
-                normalizedPublic
-            ) &&
-            req.path !== "/" &&
-            fs.existsSync(
-                normalizedRequested
-            ) &&
-            fs.statSync(
-                normalizedRequested
-            ).isFile()
-        ) {
-
-            return res.sendFile(
-                normalizedRequested
-            );
-
-        }
-
-        // Only unknown website routes go to home.
-        res.sendFile(
-            path.join(
-                PUBLIC_DIR,
-                "index.html"
-            )
-        );
-
-    }
-);
-
-// =========================================================
 // GLOBAL ERROR HANDLER
 // =========================================================
 
 app.use(
-    (error, req, res, next) => {
+    (
+        error,
+        req,
+        res,
+        next
+    ) => {
 
         console.error(
             "GLOBAL SERVER ERROR:",
@@ -486,10 +458,12 @@ app.use(
 
 // =========================================================
 // START SERVER
+// RENDER REQUIRES 0.0.0.0
 // =========================================================
 
 app.listen(
     PORT,
+    "0.0.0.0",
     () => {
 
         console.log("");
@@ -499,7 +473,7 @@ app.listen(
         );
 
         console.log(
-            "       U.S TRAVEL & TOURS SERVER"
+            "       U.S TRAVEL & TOURS API SERVER"
         );
 
         console.log(
@@ -507,19 +481,19 @@ app.listen(
         );
 
         console.log(
-            `Server running on http://localhost:${PORT}`
+            `Server running on port ${PORT}`
         );
 
         console.log(
-            `Health: http://localhost:${PORT}/api/health`
+            "Health: /api/health"
         );
 
         console.log(
-            `Admin Login: http://localhost:${PORT}/admin-login.html`
+            "Frontend: https://us-travel-tours.netlify.app"
         );
 
         console.log(
-            `Admin Dashboard: http://localhost:${PORT}/admin-dashboard.html`
+            "Backend: https://us-travel-tours.onrender.com"
         );
 
         console.log(
