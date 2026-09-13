@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "U.S TRAVEL & TOURS website backend",
   "main": "server.js",
- "scripts": {
-  "start": "node server/server.js",
-  "dev": "node server/server.js"
-},
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.3",
