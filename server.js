@@ -9,6 +9,7 @@ const fs = require("fs");
 
 // ---------------------------------------------------------
 // ENVIRONMENT
+// Backend files are in the project ROOT
 // ---------------------------------------------------------
 
 require("dotenv").config({
@@ -38,14 +39,11 @@ const PORT =
     process.env.PORT || 3000;
 
 // ---------------------------------------------------------
-// ROOT / DATA DIRECTORY
+// DATA DIRECTORY
 // ---------------------------------------------------------
 
-const ROOT_DIR =
-    path.join(__dirname, "..");
-
 const DATA_DIR =
-    path.join(ROOT_DIR, "data");
+    path.join(__dirname, "data");
 
 // ---------------------------------------------------------
 // CREATE DATA DIRECTORY
@@ -73,7 +71,7 @@ const allowedOrigins = [
 
     "http://127.0.0.1:3000"
 
-].filter(Boolean);
+];
 
 app.use(
     cors({
@@ -83,7 +81,7 @@ app.use(
             callback
         ) {
 
-            // Allow requests with no Origin
+            // Allow requests without Origin
             // such as server-to-server requests
 
             if (!origin) {
@@ -182,6 +180,9 @@ app.get(
             frontend:
                 "https://us-travel-tours.netlify.app",
 
+            backend:
+                "https://us-travel-tours.onrender.com",
+
             time:
                 new Date().toISOString()
 
@@ -230,16 +231,6 @@ console.log(
 // =========================================================
 // CHAT
 // =========================================================
-// CUSTOMER
-// GET  /api/chat/messages
-// POST /api/chat/messages
-//
-// ADMIN
-// GET   /api/chat/conversations
-// GET   /api/chat/conversations/:userId
-// POST  /api/chat/conversations/:userId/reply
-// PATCH /api/chat/conversations/:userId/read
-// =========================================================
 
 const chatPath =
     path.join(
@@ -281,7 +272,7 @@ if (
 } else {
 
     console.error(
-        "CHAT ERROR: server/chat.js not found."
+        "CHAT ERROR: chat.js not found."
     );
 
 }
@@ -333,7 +324,7 @@ if (
 } else {
 
     console.warn(
-        "CONTACT: server/contact.js not found."
+        "CONTACT: contact.js not found."
     );
 
 }
@@ -394,7 +385,7 @@ if (
 } else {
 
     console.warn(
-        "JOBS: server/jobs.js not found."
+        "JOBS: jobs.js not found."
     );
 
 }
@@ -458,7 +449,7 @@ app.use(
 
 // =========================================================
 // START SERVER
-// RENDER REQUIRES 0.0.0.0
+// RENDER
 // =========================================================
 
 app.listen(
