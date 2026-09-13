@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Reset Password | U.S TRAVEL & TOURS</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="../css/auth.css"
+    >
+
+</head>
+
+<body>
+
+    <main class="auth-page">
+
+        <section class="auth-section">
+
+            <div class="auth-container">
+
+                <div class="auth-card">
+
+                    <div class="auth-header">
+
+                        <h1>Reset Password</h1>
+
+                        <p>
+                            Create a new password for your account.
+                        </p>
+
+                    </div>
+
+                    <form
+                        id="resetPasswordForm"
+                        class="auth-form"
+                        novalidate
+                    >
+
+                        <div class="form-group">
+
+                            <label for="resetPassword">
+                                New Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="resetPassword"
+                                name="newPassword"
+                                autocomplete="new-password"
+                                required
+                                minlength="8"
+                                placeholder="Enter your new password"
+                            >
+
+                        </div>
+
+                        <div class="form-group">
+
+                            <label for="resetConfirmPassword">
+                                Confirm New Password
+                            </label>
+
+                            <input
+                                type="password"
+                                id="resetConfirmPassword"
+                                name="confirmPassword"
+                                autocomplete="new-password"
+                                required
+                                minlength="8"
+                                placeholder="Confirm your new password"
+                            >
+
+                        </div>
+
+                        <div
+                            id="resetPasswordMessage"
+                            class="form-message"
+                            role="alert"
+                            aria-live="polite"
+                        ></div>
+
+                        <button
+                            type="submit"
+                            id="resetPasswordSubmitBtn"
+                            class="btn btn-primary"
+                        >
+                            Reset Password
+                        </button>
+
+                    </form>
+
+                    <div class="auth-footer">
+
+                        <p>
+                            Remember your password?
+                            <a href="login.html">
+                                Login
+                            </a>
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+
+</body>
+
+</html>

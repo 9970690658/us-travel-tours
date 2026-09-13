@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Admin Dashboard | U.S TRAVEL & TOURS</title>
+
+    <meta
+        name="description"
+        content="U.S TRAVEL & TOURS administrator dashboard."
+    >
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/admin.css">
+</head>
+
+<body class="admin-body">
+
+    <!-- =========================================
+         ADMIN LAYOUT
+    ========================================== -->
+
+    <div class="admin-layout">
+
+        <!-- =====================================
+             SIDEBAR
+        ====================================== -->
+
+        <aside class="admin-sidebar" id="adminSidebar">
+
+            <div class="admin-sidebar-header">
+
+                <a href="/admin-dashboard.html" class="admin-brand">
+
+                    <img
+                        src="../../assets/images/logo.png"
+                        alt="U.S TRAVEL & TOURS"
+                        onerror="this.style.display='none';"
+                    >
+
+                    <div class="admin-brand-text">
+                        <strong>U.S TRAVEL</strong>
+                        <span>& TOURS</span>
+                    </div>
+
+                </a>
+
+                <button
+                    type="button"
+                    class="sidebar-close"
+                    id="sidebarClose"
+                    aria-label="Close menu"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <div class="admin-sidebar-label">
+                ADMIN PANEL
+            </div>
+
+
+            <nav class="admin-nav">
+
+                <a
+                    href="/admin/dashboard.html"
+                    class="admin-nav-item active"
+                >
+                    <span class="nav-icon">▦</span>
+                    <span>Dashboard</span>
+                </a>
+
+
+                <a
+                    href="#applications"
+                    class="admin-nav-item"
+                    data-section="applications"
+                >
+                    <span class="nav-icon">▤</span>
+                    <span>Applications</span>
+                    <span
+                        class="nav-count"
+                        id="applicationCount"
+                    >
+                        0
+                    </span>
+                </a>
+
+
+                <a
+                    href="#payments"
+                    class="admin-nav-item"
+                    data-section="payments"
+                >
+                    <span class="nav-icon">◉</span>
+                    <span>Payments</span>
+                    <span
+                        class="nav-count warning"
+                        id="paymentCount"
+                    >
+                        0
+                    </span>
+                </a>
+
+
+                <a
+                    href="#messages"
+                    class="admin-nav-item"
+                    data-section="messages"
+                >
+                    <span class="nav-icon">✉</span>
+                    <span>Contact Messages</span>
+                </a>
+
+
+                <a
+                    href="#chat"
+                    class="admin-nav-item"
+                    data-section="chat"
+                >
+                    <span class="nav-icon">◌</span>
+                    <span>Live Chat</span>
+                </a>
+
+
+                <a
+                    href="#jobs"
+                    class="admin-nav-item"
+                    data-section="jobs"
+                >
+                    <span class="nav-icon">▣</span>
+                    <span>
+    Job Applications
+</span>
+
+<span id="jobApplicationCount">0</span>
+                </a>
+
+            </nav>
+
+
+            <div class="admin-sidebar-bottom">
+
+                <a
+                    href="/index.html"
+                    target="_blank"
+                    class="sidebar-bottom-link"
+                >
+                    <span>↗</span>
+                    View Website
+                </a>
+
+                <button
+                    type="button"
+                    class="sidebar-bottom-link logout-link"
+                    id="logoutBtn"
+                >
+                    <span>↪</span>
+                    Logout
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =====================================
+             MAIN AREA
+        ====================================== -->
+
+        <div class="admin-main">
+
+            <!-- TOP HEADER -->
+
+            <header class="admin-topbar">
+
+                <button
+                    type="button"
+                    class="mobile-menu-btn"
+                    id="mobileMenuBtn"
+                    aria-label="Open menu"
+                >
+                    ☰
+                </button>
+
+
+                <div class="admin-page-heading">
+
+                    <span class="admin-eyebrow">
+                        ADMINISTRATION
+                    </span>
+
+                    <h1>Dashboard</h1>
+
+                </div>
+
+
+                <div class="admin-profile">
+
+                    <div class="admin-profile-info">
+
+                        <strong id="adminName">
+                            Administrator
+                        </strong>
+
+                        <span id="adminEmail">
+                            —
+                        </span>
+
+                    </div>
+
+                    <div class="admin-avatar" id="adminAvatar">
+                        A
+                    </div>
+
+                </div>
+
+            </header>
+
+
+            <!-- CONTENT -->
+
+            <main class="admin-content">
+
+                <!-- WELCOME -->
+
+                <section class="admin-welcome">
+
+                    <div>
+
+                        <span class="admin-welcome-label">
+                            U.S TRAVEL & TOURS
+                        </span>
+
+                        <h2>
+                            Welcome back,
+                            <span id="welcomeName">
+                                Administrator
+                            </span>
+                        </h2>
+
+                        <p>
+                            Manage applications, payments,
+                            customer messages and website
+                            activity from one place.
+                        </p>
+
+                    </div>
+
+                    <div class="admin-date-box">
+
+                        <span>Today</span>
+
+                        <strong id="currentDate">
+                            —
+                        </strong>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                     STATISTICS
+                ================================== -->
+
+                <section class="dashboard-stats">
+
+                    <article class="stat-card">
+
+                        <div class="stat-card-top">
+
+                            <div class="stat-icon blue">
+                                ▤
+                            </div>
+
+                            <span class="stat-label">
+                                APPLICATIONS
+                            </span>
+
+                        </div>
+
+                        <div class="stat-number" id="totalApplications">
+                            0
+                        </div>
+
+                        <div class="stat-footer">
+                            Total submitted applications
+                        </div>
+
+                    </article>
+
+
+                    <article class="stat-card">
+
+                        <div class="stat-card-top">
+
+                            <div class="stat-icon gold">
+                                ◉
+                            </div>
+
+                            <span class="stat-label">
+                                PAYMENT VERIFICATION
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="stat-number"
+                            id="pendingPayments"
+                        >
+                            0
+                        </div>
+
+                        <div class="stat-footer">
+                            Payments awaiting verification
+                        </div>
+
+                    </article>
+
+
+                    <article class="stat-card">
+
+                        <div class="stat-card-top">
+
+                            <div class="stat-icon purple">
+                                ◌
+                            </div>
+
+                            <span class="stat-label">
+                                UNDER REVIEW
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="stat-number"
+                            id="underReview"
+                        >
+                            0
+                        </div>
+
+                        <div class="stat-footer">
+                            Applications currently under review
+                        </div>
+
+                    </article>
+
+
+                    <article class="stat-card">
+
+                        <div class="stat-card-top">
+
+                            <div class="stat-icon green">
+                                ✓
+                            </div>
+
+                            <span class="stat-label">
+                                APPROVED
+                            </span>
+
+                        </div>
+
+                        <div
+                            class="stat-number"
+                            id="approvedApplications"
+                        >
+                            0
+                        </div>
+
+                        <div class="stat-footer">
+                            Approved applications
+                        </div>
+
+                    </article>
+
+                </section>
+
+
+                <!-- =================================
+                     QUICK ACTIONS
+                ================================== -->
+
+                <section class="admin-section">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <span>MANAGEMENT</span>
+                            <h2>Quick Actions</h2>
+                        </div>
+
+                    </div>
+
+
+                    <div class="quick-actions">
+
+                        <button
+                            type="button"
+                            class="quick-action"
+                            data-section="applications"
+                        >
+
+                            <div class="quick-action-icon">
+                                ▤
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Applications
+                                </strong>
+
+                                <span>
+                                    Review customer applications
+                                </span>
+                            </div>
+
+                            <b>→</b>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="quick-action"
+                            data-section="payments"
+                        >
+
+                            <div class="quick-action-icon gold">
+                                ◉
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Payments
+                                </strong>
+
+                                <span>
+                                    Verify submitted payments
+                                </span>
+                            </div>
+
+                            <b>→</b>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="quick-action"
+                            data-section="messages"
+                        >
+
+                            <div class="quick-action-icon">
+                                ✉
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Messages
+                                </strong>
+
+                                <span>
+                                    View customer enquiries
+                                </span>
+                            </div>
+
+                            <b>→</b>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            class="quick-action"
+                            data-section="jobs"
+                        >
+
+                            <div class="quick-action-icon">
+                                ▣
+                            </div>
+
+                            <div>
+                                <strong>
+                                    Job Applications
+                                </strong>
+
+                                <span>
+                                    Manage career applications
+                                </span>
+                            </div>
+
+                            <b>→</b>
+
+                        </button>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                     APPLICATION OVERVIEW
+                ================================== -->
+
+                <section
+                    class="admin-section"
+                    id="applications"
+                >
+
+                    <div class="section-heading">
+
+                        <div>
+                            <span>APPLICATION MANAGEMENT</span>
+                            <h2>Recent Applications</h2>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="admin-outline-btn"
+                            id="refreshApplications"
+                        >
+                            ↻ Refresh
+                        </button>
+
+                    </div>
+
+
+                    <div class="admin-table-card">
+
+                        <div
+                            class="table-loading"
+                            id="applicationsLoading"
+                        >
+                            Loading applications...
+                        </div>
+
+
+                        <div
+                            class="table-responsive"
+                            id="applicationsTableWrapper"
+                            style="display:none;"
+                        >
+
+                            <table class="admin-table">
+
+                                <thead>
+    <tr>
+        <th>ID</th>
+        <th>Applicant</th>
+        <th>Passport</th>
+        <th>Nationality</th>
+        <th>Status</th>
+        <th>Submitted</th>
+        <th>Actions</th>
+    </tr>
+</thead>
+
+                                <tbody
+                                    id="applicationsTableBody"
+                                ></tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div
+                            class="empty-state"
+                            id="applicationsEmpty"
+                            style="display:none;"
+                        >
+                            <div>▤</div>
+                            <h3>No Applications Yet</h3>
+                            <p>
+                                Submitted applications will appear here.
+                            </p>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                     PAYMENT OVERVIEW
+                ================================== -->
+
+                <section
+                    class="admin-section"
+                    id="payments"
+                >
+
+                    <div class="section-heading">
+
+                        <div>
+                            <span>PAYMENT MANAGEMENT</span>
+                            <h2>Payment Verification</h2>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="admin-outline-btn"
+                            id="refreshPayments"
+                        >
+                            ↻ Refresh
+                        </button>
+
+                    </div>
+
+
+                    <div class="admin-table-card">
+
+                        <div
+                            class="table-loading"
+                            id="paymentsLoading"
+                        >
+                            Loading payments...
+                        </div>
+
+
+                        <div
+                            class="table-responsive"
+                            id="paymentsTableWrapper"
+                            style="display:none;"
+                        >
+
+                            <table class="admin-table">
+
+                                <thead>
+
+                                    <tr>
+    <th>Payment ID</th>
+    <th>Application</th>
+    <th>Method</th>
+    <th>Reference</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Actions</th>
+</tr>
+
+                                </thead>
+
+                                <tbody
+                                    id="paymentsTableBody"
+                                ></tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div
+                            class="empty-state"
+                            id="paymentsEmpty"
+                            style="display:none;"
+                        >
+                            <div>◉</div>
+                            <h3>No Payments Yet</h3>
+                            <p>
+                                Payment submissions will appear here.
+                            </p>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- =================================
+                     SYSTEM / PLACEHOLDER SECTIONS
+                ================================== -->
+
+                <section
+    class="admin-section"
+    id="messages"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span>CUSTOMER COMMUNICATION</span>
+
+            <h2>
+                Contact Messages
+            </h2>
+
+        </div>
+
+        <button
+            type="button"
+            class="admin-outline-btn"
+            id="refreshMessages"
+        >
+            ↻ Refresh
+        </button>
+
+    </div>
+
+
+    <div class="admin-table-card">
+
+        <div
+            class="table-loading"
+            id="messagesLoading"
+        >
+            Loading contact messages...
+        </div>
+
+
+        <div
+            class="table-responsive"
+            id="messagesTableWrapper"
+            style="display:none;"
+        >
+
+            <table class="admin-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Name</th>
+
+                        <th>Email</th>
+
+                        <th>Phone</th>
+
+                        <th>Service</th>
+
+                        <th>Subject</th>
+
+                        <th>Status</th>
+
+                        <th>Date</th>
+
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody
+                    id="messagesTableBody"
+                ></tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            class="empty-state"
+            id="messagesEmpty"
+            style="display:none;"
+        >
+
+            <div>
+                ✉
+            </div>
+
+            <h3>
+                No Contact Messages Yet
+            </h3>
+
+            <p>
+                Customer enquiries submitted through
+                the contact form will appear here.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+                <!-- =========================================================
+     LIVE CHAT
+========================================================= -->
+
+<section class="admin-section" id="chat">
+
+    <div class="section-heading">
+        <div>
+            <span>CUSTOMER SUPPORT</span>
+            <h2>Live Chat</h2>
+        </div>
+
+        <button
+            type="button"
+            class="admin-chat-refresh"
+            id="refreshChatUsers"
+        >
+            <i class="fa-solid fa-rotate"></i>
+            Refresh
+        </button>
+    </div>
+
+
+    <div
+        class="admin-chat-container"
+        id="adminChatApp"
+    >
+
+        <!-- =====================================
+             CUSTOMER LIST
+        ====================================== -->
+
+        <aside class="admin-chat-users">
+
+            <div class="admin-chat-users-header">
+
+                <div>
+                    <strong>Customers</strong>
+                    <span id="chatCustomerCount">
+                        0 conversations
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div
+                id="adminChatUsersList"
+                class="admin-chat-users-list"
+            >
+
+                <div class="admin-chat-empty">
+                    <i class="fa-regular fa-comments"></i>
+                    <p>Loading conversations...</p>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =====================================
+             CHAT PANEL
+        ====================================== -->
+
+        <section class="admin-chat-panel">
+
+            <!-- HEADER -->
+
+            <div
+                class="admin-chat-panel-header"
+                id="adminChatHeader"
+            >
+
+                <div class="admin-chat-selected-avatar">
+                    <i class="fa-regular fa-user"></i>
+                </div>
+
+                <div class="admin-chat-selected-info">
+
+                    <strong id="adminChatCustomerName">
+                        Select a customer
+                    </strong>
+
+                    <span id="adminChatCustomerEmail">
+                        Customer conversation
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- MESSAGES -->
+
+            <div
+                id="adminChatMessages"
+                class="admin-chat-messages"
+            >
+
+                <div class="admin-chat-empty">
+
+                    <i class="fa-regular fa-comments"></i>
+
+                    <p>
+                        Select a customer to view messages.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- REPLY -->
+
+            <form
+                id="adminChatForm"
+                class="admin-chat-form"
+            >
+
+                <input
+                    type="text"
+                    id="adminChatInput"
+                    placeholder="Reply to customer..."
+                    maxlength="2000"
+                    autocomplete="off"
+                    disabled
+                    required
+                >
+
+                <button
+                    type="submit"
+                    id="adminChatSendBtn"
+                    disabled
+                    aria-label="Send reply"
+                >
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+
+            </form>
+
+        </section>
+
+    </div>
+
+</section>
+
+
+                <section
+    class="admin-section"
+    id="jobs"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span>CAREER MANAGEMENT</span>
+
+            <h2>
+                Job Applications
+            </h2>
+
+        </div>
+
+        <button
+            type="button"
+            class="admin-outline-btn"
+            id="refreshJobs"
+        >
+            ↻ Refresh
+        </button>
+
+    </div>
+
+
+    <div class="admin-table-card">
+
+        <div
+            class="table-loading"
+            id="jobsLoading"
+        >
+            Loading job applications...
+        </div>
+
+
+        <div
+            class="table-responsive"
+            id="jobsTableWrapper"
+            style="display:none;"
+        >
+
+            <table class="admin-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>ID</th>
+
+                        <th>Applicant</th>
+
+                        <th>Job Position</th>
+
+                        <th>Email</th>
+
+                        <th>Phone</th>
+
+                        <th>Resume</th>
+
+                        <th>Status</th>
+
+                        <th>Date</th>
+
+                        <th>Actions</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody
+                    id="jobsTableBody"
+                ></tbody>
+
+            </table>
+
+        </div>
+
+
+        <div
+            class="empty-state"
+            id="jobsEmpty"
+            style="display:none;"
+        >
+
+            <div>
+                ▣
+            </div>
+
+            <h3>
+                No Job Applications Yet
+            </h3>
+
+            <p>
+                Submitted career applications
+                will appear here.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+                <!-- FOOTER -->
+
+                <footer class="admin-footer">
+
+                    <span>
+                        © <span id="adminYear"></span>
+                        U.S TRAVEL & TOURS
+                    </span>
+
+                    <span>
+                        Administrator Dashboard
+                    </span>
+
+                </footer>
+
+            </main>
+
+        </div>
+
+    </div>
+
+
+    <!-- MOBILE OVERLAY -->
+
+    <div
+        class="admin-overlay"
+        id="adminOverlay"
+    ></div>
+
+
+    <!-- =========================================
+         JAVASCRIPT
+    ========================================== -->
+
+    <script src="../../js/admin.js"></script>
+<script src="../../js/admin-chat.js?v=3"></script>
+
+</body>
+</html>

@@ -1,1118 +1,468 @@
 // =========================================================
 // U.S TRAVEL & TOURS
-// JOB APPLICATION BACKEND
+// JOB APPLICATION FRONTEND
 // =========================================================
-
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const crypto = require("crypto");
-const multer = require("multer");
-const nodemailer = require("nodemailer");
-
-const { db } = require("./database");
-const { requireAuth, requireAdmin } = require("./auth");
-
-const router = express.Router();
-
-// =========================================================
-// CONFIG
-// =========================================================
-
-const OWNER_EMAIL =
-    process.env.OWNER_EMAIL ||
-    "ellisgeorge690@gmail.com";
-
-const MAX_RESUME_SIZE =
-    5 * 1024 * 1024;
-
-const ROOT_DIR =
-    path.join(__dirname, "..");
-
-const RESUME_DIR =
-    path.join(
-        ROOT_DIR,
-        "data",
-        "job-resumes"
-    );
-
-if (!fs.existsSync(RESUME_DIR)) {
-    fs.mkdirSync(
-        RESUME_DIR,
-        {
-            recursive: true
-        }
-    );
-}
-
-// =========================================================
-// JOB LIST
-// =========================================================
-
-const JOBS = {
-
-    "restaurant-food-service-worker": {
-        title: "Restaurant / Food-Service Worker"
-    },
-
-    "construction-worker": {
-        title: "Construction Worker"
-    },
-
-    "cleaner": {
-        title: "Cleaner"
-    },
-
-    "factory-warehouse-worker": {
-        title: "Factory / Warehouse Worker"
-    },
-
-    "driver-delivery-worker": {
-        title: "Driver / Delivery Worker"
-    },
-
-    "security-guard": {
-        title: "Security Guard"
-    },
-
-    "hotel-worker": {
-        title: "Hotel Worker"
-    },
-
-    "caregiver": {
-        title: "Caregiver"
-    },
-
-    "retail-worker": {
-        title: "Retail Worker"
-    }
-};
-
-// =========================================================
-// STATUS LABELS
-// =========================================================
-
-const JOB_STATUS_LABELS = {
-
-    new: "Submitted",
-
-    reviewing: "Under Review",
-
-    shortlisted: "Shortlisted",
-
-    hired: "Accepted",
-
-    rejected: "Rejected"
-
-};
-
-function getJobStatusLabel(status) {
-
-    return (
-        JOB_STATUS_LABELS[status] ||
-        "Submitted"
-    );
-
-}
-
-// =========================================================
-// DATABASE MIGRATION
-// =========================================================
-//
-// Adds the fields required for customer-specific
-// job application history without destroying existing data.
-//
-
-try {
-
-    const columns =
-        db.prepare(
-            "PRAGMA table_info(job_applications)"
-        ).all();
-
-    const columnNames =
-        columns.map(
-            column => column.name
-        );
-
-    if (!columnNames.includes("user_id")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN user_id INTEGER
-            `
-        );
-
-        console.log(
-            "Job applications: user_id column added."
-        );
-
-    }
-
-    if (!columnNames.includes("date_of_birth")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN date_of_birth TEXT
-            `
-        );
-
-    }
-
-    if (!columnNames.includes("country")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN country TEXT
-            `
-        );
-
-    }
-
-    if (!columnNames.includes("city")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN city TEXT
-            `
-        );
-
-    }
-
-    if (!columnNames.includes("experience")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN experience TEXT
-            `
-        );
-
-    }
-
-    if (!columnNames.includes("education")) {
-
-        db.exec(
-            `
-            ALTER TABLE job_applications
-            ADD COLUMN education TEXT
-            `
-        );
-
-    }
-
-    db.exec(
-        `
-        CREATE INDEX IF NOT EXISTS
-        idx_job_applications_user_id
-        ON job_applications(user_id)
-        `
-    );
-
-    console.log(
-        "Job application database migration completed."
-    );
-
-} catch (migrationError) {
-
-    console.error(
-        "Job application database migration error:",
-        migrationError
-    );
-
-}
-
-// =========================================================
-// EMAIL TRANSPORTER
-// =========================================================
-
-let transporter = null;
-
-try {
-
-    transporter =
-        nodemailer.createTransport({
-
-            host:
-                process.env.SMTP_HOST ||
-                "smtp-relay.brevo.com",
-
-            port:
-                Number(
-                    process.env.SMTP_PORT ||
-                    587
-                ),
-
-            secure:
-                String(
-                    process.env.SMTP_SECURE ||
-                    "false"
-                ).toLowerCase() === "true",
-
-            auth: {
-
-                user:
-                    process.env.SMTP_USER,
-
-                pass:
-                    process.env.SMTP_PASS
+const API_BASE_URL =
+    "https://us-travel-tours.onrender.com";
+document.addEventListener(
+    "DOMContentLoaded",
+    async function () {
+
+        const form =
+            document.getElementById(
+                "jobApplicationForm"
+            );
+
+        // =====================================================
+        // JOB APPLY PAGE
+        // =====================================================
+
+        if (form) {
+
+            const token =
+                localStorage.getItem("authToken") ||
+                sessionStorage.getItem("authToken");
+
+            // -------------------------------------------------
+            // LOGIN REQUIRED
+            // -------------------------------------------------
+
+            if (!token) {
+
+                sessionStorage.setItem(
+                    "returnAfterLogin",
+                    "job-apply.html" +
+                    window.location.search
+                );
+
+                window.location.replace(
+                    "login.html"
+                );
+
+                return;
 
             }
 
-        });
+            // -------------------------------------------------
+            // ELEMENTS
+            // -------------------------------------------------
 
-} catch (error) {
-
-    console.error(
-        "Job email transporter error:",
-        error
-    );
-
-}
-
-// =========================================================
-// MULTER STORAGE
-// =========================================================
-
-const storage =
-    multer.diskStorage({
-
-        destination:
-            function (
-                req,
-                file,
-                callback
-            ) {
-
-                callback(
-                    null,
-                    RESUME_DIR
+            const jobPosition =
+                document.getElementById(
+                    "jobPosition"
                 );
 
-            },
-
-        filename:
-            function (
-                req,
-                file,
-                callback
-            ) {
-
-                const randomName =
-                    crypto
-                        .randomBytes(16)
-                        .toString("hex");
-
-                const extension =
-                    path.extname(
-                        file.originalname
-                    ).toLowerCase();
-
-                callback(
-                    null,
-                    `${Date.now()}-${randomName}${extension}`
+            const resume =
+                document.getElementById(
+                    "resume"
                 );
 
-            }
+            const resumeFileName =
+                document.getElementById(
+                    "resumeFileName"
+                );
 
-    });
+            const message =
+                document.getElementById(
+                    "applicationMessage"
+                );
 
-// =========================================================
-// MULTER UPLOAD
-// =========================================================
+            const submitButton =
+                form.querySelector(
+                    "button[type='submit']"
+                );
 
-const upload =
-    multer({
+            // -------------------------------------------------
+            // AUTO SELECT JOB FROM URL
+            // -------------------------------------------------
 
-        storage,
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
 
-        limits: {
+            const selectedJob =
+                params.get("job");
 
-            fileSize:
-                MAX_RESUME_SIZE
-
-        },
-
-        fileFilter:
-            function (
-                req,
-                file,
-                callback
+            if (
+                selectedJob &&
+                jobPosition
             ) {
 
-                const extension =
-                    path.extname(
-                        file.originalname
-                    ).toLowerCase();
-
-                const allowedExtensions = [
-
-                    ".pdf",
-                    ".doc",
-                    ".docx"
-
-                ];
-
-                if (
-                    !allowedExtensions.includes(
-                        extension
-                    )
-                ) {
-
-                    return callback(
-                        new Error(
-                            "Only PDF, DOC and DOCX resume files are allowed."
-                        )
+                const option =
+                    jobPosition.querySelector(
+                        `option[value="${CSS.escape(selectedJob)}"]`
                     );
 
-                }
+                if (option) {
 
-                callback(
-                    null,
-                    true
-                );
-
-            }
-
-    });
-
-// =========================================================
-// HELPERS
-// =========================================================
-
-function cleanText(
-    value,
-    maxLength = 500
-) {
-
-    return String(
-        value ?? ""
-    )
-        .trim()
-        .slice(
-            0,
-            maxLength
-        );
-
-}
-
-function isValidEmail(email) {
-
-   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-}
-
-function cleanHeader(value) {
-
-    return String(
-        value ?? ""
-    )
-        .replace(
-            /[\r\n]/g,
-            ""
-        )
-        .trim();
-
-}
-
-function getUserId(req) {
-
-    return Number(
-        req.user?.id
-    );
-
-}
-
-function safeResumePath(filename) {
-
-    if (!filename) {
-        return null;
-    }
-
-    const resumeRoot =
-        path.resolve(
-            RESUME_DIR
-        );
-
-    const safeFilename =
-        path.basename(
-            filename
-        );
-
-    const resumePath =
-        path.resolve(
-            RESUME_DIR,
-            safeFilename
-        );
-
-    if (
-        !resumePath.startsWith(
-            resumeRoot +
-            path.sep
-        )
-    ) {
-
-        return null;
-
-    }
-
-    return resumePath;
-
-}
-
-// =========================================================
-// EMAIL HELPER
-// =========================================================
-
-async function sendEmail(options) {
-
-    if (
-        !transporter ||
-        !process.env.SMTP_USER ||
-        !process.env.SMTP_PASS
-    ) {
-
-        console.warn(
-            "Email skipped: SMTP configuration is missing."
-        );
-
-        return false;
-
-    }
-
-    try {
-
-        await transporter.sendMail({
-
-            from:
-                process.env.MAIL_FROM ||
-                process.env.SMTP_USER,
-
-            ...options
-
-        });
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "Job email sending error:",
-            error
-        );
-
-        return false;
-
-    }
-
-}
-
-// =========================================================
-// CREATE JOB APPLICATION
-//
-// POST /api/job-applications
-// POST /api/jobs/
-// =========================================================
-
-router.post(
-    "/",
-    requireAuth,
-    upload.single("resume"),
-    async function (
-        req,
-        res
-    ) {
-
-        let savedResumePath = null;
-
-        try {
-
-            // -------------------------------------------------
-            // CUSTOMER ONLY
-            // -------------------------------------------------
-
-            if (
-                !req.user ||
-                req.user.role !== "customer"
-            ) {
-
-                if (req.file) {
-
-                    try {
-
-                        fs.unlinkSync(
-                            req.file.path
-                        );
-
-                    } catch {}
+                    jobPosition.value =
+                        selectedJob;
 
                 }
 
-                return res.status(403).json({
-
-                    success: false,
-
-                    message:
-                        "Only customer accounts can submit job applications."
-
-                });
-
-            }
-
-            const userId =
-                getUserId(req);
-
-            if (
-                !Number.isInteger(userId) ||
-                userId <= 0
-            ) {
-
-                if (req.file) {
-
-                    try {
-
-                        fs.unlinkSync(
-                            req.file.path
-                        );
-
-                    } catch {}
-
-                }
-
-                return res.status(401).json({
-
-                    success: false,
-
-                    message:
-                        "Authentication is invalid."
-
-                });
-
             }
 
             // -------------------------------------------------
-            // JOB
+            // RESUME FILE NAME
             // -------------------------------------------------
 
-            const jobSlug =
-                cleanText(
-                    req.body.jobPosition,
-                    100
-                );
-
-            const job =
-                JOBS[jobSlug];
-
-            if (!job) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Please select a valid job position."
-
-                });
-
-            }
-
-            // -------------------------------------------------
-            // FORM DATA
-            // -------------------------------------------------
-
-            const fullName =
-                cleanText(
-                    req.body.fullName,
-                    150
-                );
-
-            const email =
-                cleanHeader(
-                    req.body.email
-                );
-
-            const phone =
-                cleanText(
-                    req.body.phone,
-                    50
-                );
-
-            const dateOfBirth =
-                cleanText(
-                    req.body.dateOfBirth,
-                    30
-                );
-
-            const country =
-                cleanText(
-                    req.body.country,
-                    100
-                );
-
-            const city =
-                cleanText(
-                    req.body.city,
-                    100
-                );
-
-            const experience =
-                cleanText(
-                    req.body.experience,
-                    100
-                );
-
-            const education =
-                cleanText(
-                    req.body.education,
-                    100
-                );
-
-            const coverLetter =
-                cleanText(
-                    req.body.message,
-                    3000
-                );
-
-            // -------------------------------------------------
-            // REQUIRED VALIDATION
-            // -------------------------------------------------
-
-            if (!fullName) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Full name is required."
-
-                });
-
-            }
-
-            if (
-                !email ||
-                !isValidEmail(email)
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Please enter a valid email address."
-
-                });
-
-            }
-
-            if (!phone) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Phone number is required."
-
-                });
-
-            }
-
-            if (!country) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Country is required."
-
-                });
-
-            }
-
-            if (!city) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "City is required."
-
-                });
-
-            }
-
-            if (
-                req.body.applicationConsent !==
-                "on"
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Please confirm the application consent."
-
-                });
-
-            }
-
-            // -------------------------------------------------
-            // RESUME
-            // -------------------------------------------------
-
-            if (!req.file) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Please upload your resume."
-
-                });
-
-            }
-
-            savedResumePath =
-                req.file.path;
-
-            // -------------------------------------------------
-            // USER
-            // -------------------------------------------------
-
-            const user =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        name,
-                        email,
-                        phone
-                    FROM users
-                    WHERE id = ?
-                    LIMIT 1
-                    `
-                ).get(userId);
-
-            if (!user) {
-
-                if (
-                    savedResumePath &&
-                    fs.existsSync(
-                        savedResumePath
-                    )
-                ) {
-
-                    fs.unlinkSync(
-                        savedResumePath
-                    );
-
-                }
-
-                return res.status(401).json({
-
-                    success: false,
-
-                    message:
-                        "Customer account not found."
-
-                });
-
-            }
-
-            // -------------------------------------------------
-            // SAVE APPLICATION
-            // -------------------------------------------------
-
-            const insert =
-                db.prepare(
-                    `
-                    INSERT INTO job_applications (
-                        user_id,
-                        job_title,
-                        name,
-                        email,
-                        phone,
-                        resume_file,
-                        cover_letter,
-                        status,
-                        date_of_birth,
-                        country,
-                        city,
-                        experience,
-                        education
-                    )
-                    VALUES (
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        'new',
-                        ?,
-                        ?,
-                        ?,
-                        ?,
-                        ?
-                    )
-                    `
-                );
-
-            const result =
-                insert.run(
-
-                    userId,
-
-                    job.title,
-
-                    fullName,
-
-                    email,
-
-                    phone,
-
-                    path.basename(
-                        savedResumePath
-                    ),
-
-                    coverLetter,
-
-                    dateOfBirth,
-
-                    country,
-
-                    city,
-
-                    experience,
-
-                    education
-
-                );
-
-            const applicationId =
-                Number(
-                    result.lastInsertRowid
-                );
-
-            // -------------------------------------------------
-            // OWNER EMAIL
-            // -------------------------------------------------
-
-            const ownerEmailBody = `
-
-New Job Application
-
-Application ID: #${applicationId}
-
-Job Position:
-${job.title}
-
-Applicant Name:
-${fullName}
-
-Email:
-${email}
-
-Phone:
-${phone}
-
-Date of Birth:
-${dateOfBirth || "Not provided"}
-
-Country:
-${country}
-
-City:
-${city}
-
-Work Experience:
-${experience || "Not provided"}
-
-Education:
-${education || "Not provided"}
-
-Additional Message:
-${coverLetter || "No additional message"}
-
-Application Status:
-Submitted
-
-Submitted:
-${new Date().toLocaleString("en-US")}
-
-`;
-
-            const ownerEmailSent =
-                await sendEmail({
-
-                    to:
-                        OWNER_EMAIL,
-
-                    replyTo:
-                        email,
-
-                    subject:
-                        `New Job Application #${applicationId} - ${job.title}`,
-
-                    text:
-                        ownerEmailBody,
-
-                    attachments: [
-
-                        {
-
-                            filename:
-                                cleanHeader(
-                                    req.file.originalname
-                                ),
-
-                            path:
-                                savedResumePath
+            resume?.addEventListener(
+                "change",
+                function () {
+
+                    if (
+                        !resume.files ||
+                        !resume.files.length
+                    ) {
+
+                        if (resumeFileName) {
+
+                            resumeFileName.textContent =
+                                "No file selected";
 
                         }
 
-                    ]
+                        return;
 
-                });
+                    }
 
-            // -------------------------------------------------
-            // APPLICANT CONFIRMATION EMAIL
-            // -------------------------------------------------
+                    const file =
+                        resume.files[0];
 
-            await sendEmail({
+                    if (resumeFileName) {
 
-                to:
-                    email,
+                        resumeFileName.textContent =
+                            file.name;
 
-                subject:
-                    `Job Application Received #${applicationId} - U.S TRAVEL & TOURS`,
-
-                text: `
-
-Hello ${fullName},
-
-Your job application has been successfully submitted.
-
-Application ID: #${applicationId}
-
-Job Position:
-${job.title}
-
-Current Status:
-Submitted
-
-Our team will review your application.
-
-You can check your application status from the "My Job Applications" section of your account.
-
-U.S TRAVEL & TOURS
-
-`
-
-            });
-
-            // -------------------------------------------------
-            // RESPONSE
-            // -------------------------------------------------
-
-            return res.status(201).json({
-
-                success: true,
-
-                message:
-                    "Job application submitted successfully.",
-
-                application: {
-
-                    id:
-                        applicationId,
-
-                    jobSlug:
-                        jobSlug,
-
-                    jobTitle:
-                        job.title,
-
-                    status:
-                        "new",
-
-                    statusLabel:
-                        "Submitted",
-
-                    emailSent:
-                        ownerEmailSent
+                    }
 
                 }
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Job application submission error:",
-                error
             );
 
-            if (
-                savedResumePath &&
-                fs.existsSync(
-                    savedResumePath
-                )
+            // -------------------------------------------------
+            // MESSAGE
+            // -------------------------------------------------
+
+            function showMessage(
+                text,
+                type
             ) {
 
-                try {
+                if (!message) {
+                    return;
+                }
 
-                    fs.unlinkSync(
-                        savedResumePath
+                message.textContent =
+                    text;
+
+                message.className =
+                    "application-message";
+
+                if (type) {
+
+                    message.classList.add(
+                        type
                     );
-
-                } catch {}
-
-            }
-
-            if (
-                error instanceof
-                multer.MulterError
-            ) {
-
-                if (
-                    error.code ===
-                    "LIMIT_FILE_SIZE"
-                ) {
-
-                    return res.status(400).json({
-
-                        success: false,
-
-                        message:
-                            "Resume file must be 5 MB or smaller."
-
-                    });
 
                 }
 
             }
 
-            return res.status(500).json({
+            // -------------------------------------------------
+            // SUBMIT
+            // -------------------------------------------------
 
-                success: false,
+            form.addEventListener(
+                "submit",
+                async function (event) {
 
-                message:
-                    error?.message ||
-                    "Unable to submit job application."
+                    event.preventDefault();
 
-            });
+                    showMessage(
+                        "",
+                        ""
+                    );
+
+                    if (
+                        !form.checkValidity()
+                    ) {
+
+                        form.reportValidity();
+
+                        return;
+
+                    }
+
+                    if (
+                        !resume ||
+                        !resume.files ||
+                        !resume.files.length
+                    ) {
+
+                        showMessage(
+                            "Please upload your resume.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+                    const file =
+                        resume.files[0];
+
+                    const allowedTypes = [
+
+                        "application/pdf",
+
+                        "application/msword",
+
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+                    ];
+
+                    const extension =
+                        file.name
+                            .split(".")
+                            .pop()
+                            .toLowerCase();
+
+                    const allowedExtensions = [
+
+                        "pdf",
+                        "doc",
+                        "docx"
+
+                    ];
+
+                    if (
+                        !allowedTypes.includes(
+                            file.type
+                        ) &&
+                        !allowedExtensions.includes(
+                            extension
+                        )
+                    ) {
+
+                        showMessage(
+                            "Only PDF, DOC or DOCX resume files are allowed.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+                    if (
+                        file.size >
+                        5 * 1024 * 1024
+                    ) {
+
+                        showMessage(
+                            "Resume must be 5 MB or smaller.",
+                            "error"
+                        );
+
+                        return;
+
+                    }
+
+                    // -------------------------------------------------
+                    // BUTTON
+                    // -------------------------------------------------
+
+                    const originalButtonHTML =
+                        submitButton
+                            ? submitButton.innerHTML
+                            : "";
+
+                    if (submitButton) {
+
+                        submitButton.disabled =
+                            true;
+
+                        submitButton.innerHTML =
+                            `
+                                Submitting...
+                                <i class="fa-solid fa-spinner fa-spin"></i>
+                            `;
+
+                    }
+
+                    try {
+
+                        const formData =
+                            new FormData(form);
+
+                        const response =
+                            await fetch(`${API_BASE_URL}/api/job-applications`, {
+
+                                    method: "POST",
+
+                                    headers: {
+
+                                        "Authorization":
+                                            `Bearer ${token}`
+
+                                    },
+
+                                    body:
+                                        formData
+
+                                }
+                            );
+
+                        let result =
+                            null;
+
+                        try {
+
+                            result =
+                                await response.json();
+
+                        } catch {
+
+                            result =
+                                null;
+
+                        }
+
+                        if (
+                            response.status === 401 ||
+                            response.status === 403
+                        ) {
+
+                            localStorage.removeItem(
+                                "authToken"
+                            );
+
+                            sessionStorage.removeItem(
+                                "authToken"
+                            );
+
+                            sessionStorage.setItem(
+                                "returnAfterLogin",
+                                "job-apply.html" +
+                                window.location.search
+                            );
+
+                            window.location.replace(
+                                "login.html"
+                            );
+
+                            return;
+
+                        }
+
+                        if (
+                            !response.ok ||
+                            !result?.success
+                        ) {
+
+                            throw new Error(
+                                result?.message ||
+                                "Unable to submit job application."
+                            );
+
+                        }
+
+                        showMessage(
+                            result.message ||
+                            "Job application submitted successfully.",
+                            "success"
+                        );
+
+                        // -------------------------------------------------
+                        // RESET FORM
+                        // -------------------------------------------------
+
+                        form.reset();
+
+                        if (
+                            resumeFileName
+                        ) {
+
+                            resumeFileName.textContent =
+                                "No file selected";
+
+                        }
+
+                        if (
+                            selectedJob &&
+                            jobPosition
+                        ) {
+
+                            jobPosition.value =
+                                selectedJob;
+
+                        }
+
+                        // -------------------------------------------------
+                        // SAVE LAST APPLICATION ID
+                        // -------------------------------------------------
+
+                        if (
+                            result.application?.id
+                        ) {
+
+                            sessionStorage.setItem(
+                                "lastJobApplicationId",
+                                String(
+                                    result.application.id
+                                )
+                            );
+
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                            "Job application error:",
+                            error
+                        );
+
+                        showMessage(
+                            error.message ||
+                            "Unable to submit job application. Please try again.",
+                            "error"
+                        );
+
+                    } finally {
+
+                        if (submitButton) {
+
+                            submitButton.disabled =
+                                false;
+
+                            submitButton.innerHTML =
+                                originalButtonHTML;
+
+                        }
+
+                    }
+
+                }
+            );
+
+        }
+
+        // =====================================================
+        // MY JOB APPLICATIONS PAGE
+        // =====================================================
+
+        const myJobsContainer =
+            document.getElementById(
+                "myJobApplications"
+            );
+
+        if (
+            myJobsContainer
+        ) {
+
+            await loadMyJobApplications(
+                myJobsContainer
+            );
 
         }
 
@@ -1120,88 +470,650 @@ U.S TRAVEL & TOURS
 );
 
 // =========================================================
-// MY JOB APPLICATIONS
-//
-// GET /api/job-applications/my
-// GET /api/jobs/my
+// LOAD CUSTOMER JOB APPLICATIONS
 // =========================================================
 
-router.get(
-    "/my",
-    requireAuth,
-    function (
-        req,
-        res
+async function loadMyJobApplications(
+    container
+) {
+
+    const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+    if (!token) {
+
+        window.location.replace(
+            "login.html"
+        );
+
+        return;
+
+    }
+
+    try {
+
+        await fetch(`${API_BASE_URL}/api/job-applications`, {
+                    method: "GET",
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${token}`,
+
+                        "Accept":
+                            "application/json"
+
+                    },
+
+                    cache:
+                        "no-store"
+
+                }
+            );
+
+        if (
+            response.status === 401 ||
+            response.status === 403
+        ) {
+
+            localStorage.removeItem(
+                "authToken"
+            );
+
+            sessionStorage.removeItem(
+                "authToken"
+            );
+
+            window.location.replace(
+                "login.html"
+            );
+
+            return;
+
+        }
+
+        const result =
+            await response.json();
+
+        if (
+            !response.ok ||
+            !result.success
+        ) {
+
+            throw new Error(
+                result.message ||
+                "Unable to load applications."
+            );
+
+        }
+
+        const applications =
+            Array.isArray(
+                result.applications
+            )
+                ? result.applications
+                : [];
+
+        if (
+            !applications.length
+        ) {
+
+            container.innerHTML = `
+
+                <div class="empty-state">
+
+                    <div>
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+
+                    <h3>
+                        No Job Applications Yet
+                    </h3>
+
+                    <p>
+                        Your submitted job applications
+                        will appear here.
+                    </p>
+
+                    <a
+                        href="jobs.html"
+                        class="btn btn-primary"
+                    >
+                        View Job Opportunities
+                    </a>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+        container.innerHTML =
+            applications
+                .map(
+                    application => {
+
+                        return `
+
+                            <article
+                                class="my-job-application-card"
+                            >
+
+                                <div
+                                    class="my-job-application-top"
+                                >
+
+                                    <div>
+
+                                        <span>
+                                            APPLICATION #${escapeJobsHtml(application.id)}
+                                        </span>
+
+                                        <h3>
+                                            ${escapeJobsHtml(application.job_title)}
+                                        </h3>
+
+                                    </div>
+
+                                    <strong
+                                        class="job-status-badge ${escapeJobsHtml(application.status)}"
+                                    >
+                                        ${formatJobStatus(application.status)}
+                                    </strong>
+
+                                </div>
+
+                                <div
+                                    class="my-job-application-details"
+                                >
+
+                                    <p>
+                                        <strong>Name:</strong>
+                                        ${escapeJobsHtml(application.name)}
+                                    </p>
+
+                                    <p>
+                                        <strong>Email:</strong>
+                                        ${escapeJobsHtml(application.email)}
+                                    </p>
+
+                                    <p>
+                                        <strong>Phone:</strong>
+                                        ${escapeJobsHtml(application.phone)}
+                                    </p>
+
+                                    <p>
+                                        <strong>Submitted:</strong>
+                                        ${formatJobDate(application.created_at)}
+                                    </p>
+
+                                </div>
+
+                            </article>
+
+                        `;
+
+                    }
+                )
+                .join("");
+
+    } catch (error) {
+
+        console.error(
+            "My job applications error:",
+            error
+        );
+
+        container.innerHTML = `
+
+            <div class="empty-state">
+
+                <h3>
+                    Unable to load applications
+                </h3>
+
+                <p>
+                    Please refresh the page and try again.
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+// =========================================================
+// HELPERS
+// =========================================================
+
+function escapeJobsHtml(
+    value
+) {
+
+    return String(
+        value ?? ""
+    )
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+function formatJobStatus(
+    status
+) {
+
+    const labels = {
+
+        new:
+            "New",
+
+        reviewing:
+            "Reviewing",
+
+        shortlisted:
+            "Shortlisted",
+
+        rejected:
+            "Rejected",
+
+        hired:
+            "Hired"
+
+    };
+
+    return labels[status] ||
+        String(
+            status || "New"
+        )
+            .replaceAll(
+                "_",
+                " "
+            );
+
+}
+
+function formatJobDate(
+    value
+) {
+
+    if (!value) {
+        return "—";
+    }
+
+    const date =
+        new Date(value);
+
+    if (
+        Number.isNaN(
+            date.getTime()
+        )
     ) {
+
+        return "—";
+
+    }
+
+    return date.toLocaleDateString(
+        "en-US",
+        {
+
+            month: "short",
+
+            day: "numeric",
+
+            year: "numeric"
+
+        }
+    );
+
+}
+
+// =========================================================
+// MY JOB APPLICATIONS
+// =========================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async function () {
+
+        const container =
+            document.getElementById(
+                "myJobApplications"
+            );
+
+        if (!container) {
+            return;
+        }
+
+
+        const loading =
+            document.getElementById(
+                "myJobsLoading"
+            );
+
+        const empty =
+            document.getElementById(
+                "myJobsEmpty"
+            );
+
+        const errorBox =
+            document.getElementById(
+                "myJobsError"
+            );
+
+        const errorText =
+            document.getElementById(
+                "myJobsErrorText"
+            );
+
+        const wrapper =
+            document.getElementById(
+                "myJobsTableWrapper"
+            );
+
+        const body =
+            document.getElementById(
+                "myJobsTableBody"
+            );
+
+
+        const token =
+    localStorage.getItem("authToken") ||
+    sessionStorage.getItem("authToken");
+
+if (!token) {
+    window.location.href =
+        "login.html?returnAfterLogin=job-apply.html";
+    return;
+}
+
+
+        // -----------------------------------------------------
+        // LOAD USER JOB APPLICATIONS
+        // -----------------------------------------------------
 
         try {
 
-            if (
-                req.user?.role !==
-                "customer"
-            ) {
+            await fetch(
+    `${API_BASE_URL}/api/job-applications/my`,
+    {
+                        method: "GET",
 
-                return res.status(403).json({
+                        headers: {
+                            "Authorization":
+                                `Bearer ${token}`,
+                            "Accept":
+                                "application/json"
+                        },
 
-                    success: false,
-
-                    message:
-                        "Customer access required."
-
-                });
-
-            }
-
-            const userId =
-                getUserId(req);
-
-            const applications =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        job_title,
-                        name,
-                        email,
-                        phone,
-                        resume_file,
-                        cover_letter,
-                        date_of_birth,
-                        country,
-                        city,
-                        experience,
-                        education,
-                        status,
-                        created_at,
-                        updated_at
-                    FROM job_applications
-                    WHERE user_id = ?
-                    ORDER BY id DESC
-                    `
-                ).all(userId);
-
-            const formattedApplications =
-                applications.map(
-                    application => ({
-
-                        ...application,
-
-                        statusLabel:
-                            getJobStatusLabel(
-                                application.status
-                            )
-
-                    })
+                        cache: "no-store"
+                    }
                 );
 
-            return res.json({
 
-                success: true,
+            let result = null;
 
-                applications:
-                    formattedApplications
+            try {
+                result =
+                    await response.json();
+            } catch {
+                result = null;
+            }
 
-            });
+
+            if (
+                response.status === 401 ||
+                response.status === 403
+            ) {
+
+                localStorage.removeItem(
+                    "authToken"
+                );
+
+                sessionStorage.removeItem(
+                    "authToken"
+                );
+
+                window.location.href =
+                    "login.html?returnAfterLogin=my-job-applications.html";
+
+                return;
+            }
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result?.message ||
+                    "Unable to load your job applications."
+                );
+            }
+
+
+            const applications =
+                Array.isArray(
+                    result?.applications
+                )
+                    ? result.applications
+                    : [];
+
+
+            // -------------------------------------------------
+            // HIDE LOADING
+            // -------------------------------------------------
+
+            if (loading) {
+                loading.style.display =
+                    "none";
+            }
+
+
+            // -------------------------------------------------
+            // NO APPLICATIONS
+            // -------------------------------------------------
+
+            if (!applications.length) {
+
+                if (empty) {
+                    empty.style.display =
+                        "block";
+                }
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // SHOW TABLE
+            // -------------------------------------------------
+
+            if (wrapper) {
+                wrapper.style.display =
+                    "block";
+            }
+
+
+            if (!body) {
+                return;
+            }
+
+
+            body.innerHTML = "";
+
+
+            applications.forEach(
+                application => {
+
+                    const row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    const status =
+                        String(
+                            application.status ||
+                            "new"
+                        ).toLowerCase();
+
+
+                    const statusLabels = {
+
+                        new:
+                            "Submitted",
+
+                        reviewing:
+                            "Under Review",
+
+                        shortlisted:
+                            "Shortlisted",
+
+                        hired:
+                            "Accepted",
+
+                        rejected:
+                            "Rejected"
+                    };
+
+
+                    const statusLabel =
+                        statusLabels[status] ||
+                        status
+                            .replaceAll(
+                                "_",
+                                " "
+                            )
+                            .replace(
+                                /\b\w/g,
+                                letter =>
+                                    letter.toUpperCase()
+                            );
+
+
+                    const applicationId =
+                        application.id ??
+                        "—";
+
+
+                    const jobTitle =
+                        application.job_title ||
+                        "—";
+
+
+                    const createdAt =
+                        application.created_at ||
+                        application.createdAt;
+
+
+                    let dateText =
+                        "—";
+
+
+                    if (createdAt) {
+
+                        const date =
+                            new Date(
+                                createdAt
+                            );
+
+                        if (
+                            !Number.isNaN(
+                                date.getTime()
+                            )
+                        ) {
+
+                            dateText =
+                                date.toLocaleDateString(
+                                    "en-US",
+                                    {
+                                        month: "short",
+                                        day: "numeric",
+                                        year: "numeric"
+                                    }
+                                );
+                        }
+                    }
+
+
+                    const resumeHTML =
+                        application.resume_file
+                            ? `
+                                <a
+                                    href="${API_BASE_URL}/api/job-applications/${encodeURIComponent(applicationId)}/resume"
+                                    class="job-resume-link"
+                                    target="_blank"
+                                    rel="noopener"
+                                >
+                                    View Resume
+                                </a>
+                            `
+                            : "—";
+
+
+                    row.innerHTML = `
+
+                        <td>
+                            #${escapeJobHtml(
+                                applicationId
+                            )}
+                        </td>
+
+                        <td class="job-title-cell">
+                            ${escapeJobHtml(
+                                jobTitle
+                            )}
+                        </td>
+
+                        <td>
+                            <span class="job-status-badge">
+                                ${escapeJobHtml(
+                                    statusLabel
+                                )}
+                            </span>
+                        </td>
+
+                        <td class="job-date">
+                            ${escapeJobHtml(
+                                dateText
+                            )}
+                        </td>
+
+                        <td>
+                            ${resumeHTML}
+                        </td>
+
+                    `;
+
+
+                    body.appendChild(
+                        row
+                    );
+                }
+            );
+
 
         } catch (error) {
 
@@ -1210,851 +1122,441 @@ router.get(
                 error
             );
 
-            return res.status(500).json({
 
-                success: false,
-
-                message:
-                    "Unable to load your job applications."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// ADMIN — ALL JOB APPLICATIONS
-//
-// GET /api/jobs/applications
-// =========================================================
-
-router.get(
-    "/applications",
-    requireAdmin,
-    function (
-        req,
-        res
-    ) {
-
-        try {
-
-            const applications =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        user_id,
-                        job_title,
-                        name,
-                        email,
-                        phone,
-                        resume_file,
-                        cover_letter,
-                        date_of_birth,
-                        country,
-                        city,
-                        experience,
-                        education,
-                        status,
-                        created_at,
-                        updated_at
-                    FROM job_applications
-                    ORDER BY id DESC
-                    `
-                ).all();
-
-            const formattedApplications =
-                applications.map(
-                    application => ({
-
-                        ...application,
-
-                        statusLabel:
-                            getJobStatusLabel(
-                                application.status
-                            )
-
-                    })
-                );
-
-            return res.json({
-
-                success: true,
-
-                applications:
-                    formattedApplications
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Admin job applications error:",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to load job applications."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// GET SINGLE JOB APPLICATION
-//
-// GET /api/jobs/applications/:id
-// =========================================================
-
-router.get(
-    "/applications/:id",
-    requireAuth,
-    function (
-        req,
-        res
-    ) {
-
-        try {
-
-            const applicationId =
-                Number(
-                    req.params.id
-                );
-
-            if (
-                !Number.isInteger(
-                    applicationId
-                ) ||
-                applicationId <= 0
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid application ID."
-
-                });
-
+            if (loading) {
+                loading.style.display =
+                    "none";
             }
 
-            const application =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        user_id,
-                        job_title,
-                        name,
-                        email,
-                        phone,
-                        resume_file,
-                        cover_letter,
-                        date_of_birth,
-                        country,
-                        city,
-                        experience,
-                        education,
-                        status,
-                        created_at,
-                        updated_at
-                    FROM job_applications
-                    WHERE id = ?
-                    LIMIT 1
-                    `
-                ).get(applicationId);
 
-            if (!application) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Job application not found."
-
-                });
-
+            if (errorBox) {
+                errorBox.style.display =
+                    "block";
             }
 
-            const isAdmin =
-                req.user?.role ===
-                "admin";
 
-            const isOwner =
-                Number(
-                    application.user_id
-                ) ===
-                Number(
-                    req.user?.id
-                );
-
-            if (
-                !isAdmin &&
-                !isOwner
-            ) {
-
-                return res.status(403).json({
-
-                    success: false,
-
-                    message:
-                        "You are not authorized to view this application."
-
-                });
-
-            }
-
-            return res.json({
-
-                success: true,
-
-                application: {
-
-                    ...application,
-
-                    statusLabel:
-                        getJobStatusLabel(
-                            application.status
-                        )
-
-                }
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Single job application error:",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to load job application."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// SECURE RESUME
-//
-// GET /api/jobs/applications/:id/resume
-//
-// Admin can access any resume.
-// Customer can access only their own resume.
-// =========================================================
-
-router.get(
-    "/applications/:id/resume",
-    requireAuth,
-    function (
-        req,
-        res
-    ) {
-
-        try {
-
-            const applicationId =
-                Number(
-                    req.params.id
-                );
-
-            if (
-                !Number.isInteger(
-                    applicationId
-                ) ||
-                applicationId <= 0
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid application ID."
-
-                });
-
-            }
-
-            const application =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        user_id,
-                        name,
-                        resume_file
-                    FROM job_applications
-                    WHERE id = ?
-                    LIMIT 1
-                    `
-                ).get(applicationId);
-
-            if (!application) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Job application not found."
-
-                });
-
-            }
-
-            const isAdmin =
-                req.user?.role ===
-                "admin";
-
-            const isOwner =
-                Number(
-                    application.user_id
-                ) ===
-                Number(
-                    req.user?.id
-                );
-
-            if (
-                !isAdmin &&
-                !isOwner
-            ) {
-
-                return res.status(403).json({
-
-                    success: false,
-
-                    message:
-                        "You are not authorized to access this resume."
-
-                });
-
-            }
-
-            if (!application.resume_file) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Resume not available."
-
-                });
-
-            }
-
-            const resumePath =
-                safeResumePath(
-                    application.resume_file
-                );
-
-            if (!resumePath) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid resume path."
-
-                });
-
-            }
-
-            if (
-                !fs.existsSync(
-                    resumePath
-                )
-            ) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Resume file not found."
-
-                });
-
-            }
-
-            return res.download(
-
-                resumePath,
-
-                path.basename(
-                    application.resume_file
-                ),
-
-                function (
-                    downloadError
-                ) {
-
-                    if (
-                        downloadError &&
-                        !res.headersSent
-                    ) {
-
-                        console.error(
-                            "Resume download callback error:",
-                            downloadError
-                        );
-
-                        return res.status(500).json({
-
-                            success: false,
-
-                            message:
-                                "Unable to download resume."
-
-                        });
-
-                    }
-
-                }
-
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Resume download error:",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to download resume."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// ADMIN — UPDATE STATUS
-//
-// PATCH /api/jobs/applications/:id/status
-// =========================================================
-
-router.patch(
-    "/applications/:id/status",
-    requireAdmin,
-    async function (
-        req,
-        res
-    ) {
-
-        try {
-
-            const applicationId =
-                Number(
-                    req.params.id
-                );
-
-            if (
-                !Number.isInteger(
-                    applicationId
-                ) ||
-                applicationId <= 0
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid application ID."
-
-                });
-
-            }
-
-            const newStatus =
-                cleanText(
-                    req.body.status,
-                    50
-                ).toLowerCase();
-
-            const allowedStatuses = [
-
-                "new",
-                "reviewing",
-                "shortlisted",
-                "hired",
-                "rejected"
-
-            ];
-
-            if (
-                !allowedStatuses.includes(
-                    newStatus
-                )
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid job application status."
-
-                });
-
-            }
-
-            const existing =
-                db.prepare(
-                    `
-                    SELECT
-                        id,
-                        user_id,
-                        name,
-                        email,
-                        job_title,
-                        status
-                    FROM job_applications
-                    WHERE id = ?
-                    LIMIT 1
-                    `
-                ).get(applicationId);
-
-            if (!existing) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Job application not found."
-
-                });
-
-            }
-
-            const oldStatus =
-                existing.status;
-
-            // -------------------------------------------------
-            // UPDATE DATABASE
-            // -------------------------------------------------
-
-            db.prepare(
-                `
-                UPDATE job_applications
-                SET
-                    status = ?,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-                `
-            ).run(
-
-                newStatus,
-
-                applicationId
-
-            );
-
-            const statusLabel =
-                getJobStatusLabel(
-                    newStatus
-                );
-
-            // -------------------------------------------------
-            // STATUS EMAIL TO APPLICANT
-            // -------------------------------------------------
-
-            if (
-                existing.email &&
-                newStatus !== oldStatus
-            ) {
-
-                await sendEmail({
-
-                    to:
-                        existing.email,
-
-                    subject:
-                        `Job Application Update #${applicationId} - ${statusLabel}`,
-
-                    text: `
-
-Hello ${existing.name},
-
-There is an update to your job application.
-
-Application ID:
-#${applicationId}
-
-Job Position:
-${existing.job_title}
-
-Previous Status:
-${getJobStatusLabel(oldStatus)}
-
-Current Status:
-${statusLabel}
-
-Please log in to your U.S TRAVEL & TOURS account to view your latest application status.
-
-U.S TRAVEL & TOURS
-
-`
-
-                });
-
-            }
-
-            return res.json({
-
-                success: true,
-
-                message:
-                    `Job application status updated to ${statusLabel}.`,
-
-                status:
-                    newStatus,
-
-                statusLabel:
-                    statusLabel
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Job application status error:",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to update job application status."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// ADMIN — DELETE APPLICATION
-//
-// DELETE /api/jobs/applications/:id
-// =========================================================
-
-router.delete(
-    "/applications/:id",
-    requireAdmin,
-    function (
-        req,
-        res
-    ) {
-
-        try {
-
-            const applicationId =
-                Number(
-                    req.params.id
-                );
-
-            if (
-                !Number.isInteger(
-                    applicationId
-                ) ||
-                applicationId <= 0
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Invalid application ID."
-
-                });
-
-            }
-
-            const application =
-                db.prepare(
-                    `
-                    SELECT
-                        resume_file
-                    FROM job_applications
-                    WHERE id = ?
-                    LIMIT 1
-                    `
-                ).get(applicationId);
-
-            if (!application) {
-
-                return res.status(404).json({
-
-                    success: false,
-
-                    message:
-                        "Job application not found."
-
-                });
-
-            }
-
-            db.prepare(
-                `
-                DELETE FROM job_applications
-                WHERE id = ?
-                `
-            ).run(applicationId);
-
-            if (
-                application.resume_file
-            ) {
-
-                const resumePath =
-                    safeResumePath(
-                        application.resume_file
-                    );
-
-                if (
-                    resumePath &&
-                    fs.existsSync(
-                        resumePath
-                    )
-                ) {
-
-                    try {
-
-                        fs.unlinkSync(
-                            resumePath
-                        );
-
-                    } catch (
-                        deleteError
-                    ) {
-
-                        console.error(
-                            "Resume delete error:",
-                            deleteError
-                        );
-
-                    }
-
-                }
-
-            }
-
-            return res.json({
-
-                success: true,
-
-                message:
-                    "Job application deleted successfully."
-
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Delete job application error:",
-                error
-            );
-
-            return res.status(500).json({
-
-                success: false,
-
-                message:
-                    "Unable to delete job application."
-
-            });
-
-        }
-
-    }
-);
-
-// =========================================================
-// MULTER ERROR HANDLER
-// =========================================================
-
-router.use(
-    function (
-        error,
-        req,
-        res,
-        next
-    ) {
-
-        if (
-            error instanceof
-            multer.MulterError
-        ) {
-
-            if (
-                error.code ===
-                "LIMIT_FILE_SIZE"
-            ) {
-
-                return res.status(400).json({
-
-                    success: false,
-
-                    message:
-                        "Resume file must be 5 MB or smaller."
-
-                });
-
-            }
-
-        }
-
-        if (error) {
-
-            return res.status(400).json({
-
-                success: false,
-
-                message:
+            if (errorText) {
+                errorText.textContent =
                     error.message ||
-                    "Unable to process uploaded resume."
-
-            });
-
+                    "Unable to load your job applications.";
+            }
         }
-
-        next();
-
     }
 );
 
-module.exports = router;
+
+// =========================================================
+// ESCAPE HTML
+// =========================================================
+
+function escapeJobHtml(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* =========================================================
+   MY JOB APPLICATIONS
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", async function () {
+
+    const tableWrapper =
+        document.getElementById("myJobsTableWrapper");
+
+    const tableBody =
+        document.getElementById("myJobsTableBody");
+
+    const loading =
+        document.getElementById("myJobsLoading");
+
+    const empty =
+        document.getElementById("myJobsEmpty");
+
+    const errorBox =
+        document.getElementById("myJobsError");
+
+    const errorText =
+        document.getElementById("myJobsErrorText");
+
+    if (!tableWrapper || !tableBody) {
+        return;
+    }
+
+    const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+    if (!token) {
+
+        window.location.href =
+            "login.html?returnAfterLogin=my-job-applications.html";
+
+        return;
+    }
+
+    function escapeHTML(value) {
+
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getStatus(status) {
+
+        const map = {
+
+            new: {
+                label: "Submitted",
+                className: "status-submitted"
+            },
+
+            reviewing: {
+                label: "Under Review",
+                className: "status-reviewing"
+            },
+
+            shortlisted: {
+                label: "Shortlisted",
+                className: "status-shortlisted"
+            },
+
+            hired: {
+                label: "Accepted",
+                className: "status-accepted"
+            },
+
+            rejected: {
+                label: "Rejected",
+                className: "status-rejected"
+            }
+
+        };
+
+        return map[status] || {
+            label: "Submitted",
+            className: "status-submitted"
+        };
+    }
+
+    function formatJobTitle(value) {
+
+        return String(value || "")
+            .replace(/-/g, " ")
+            .replace(/\b\w/g, function (letter) {
+                return letter.toUpperCase();
+            });
+    }
+
+    function formatDate(value) {
+
+        if (!value) return "-";
+
+        const date = new Date(value);
+
+        if (Number.isNaN(date.getTime())) {
+            return escapeHTML(value);
+        }
+
+        return date.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+        });
+    }
+
+    try {
+
+        const response = await fetch(
+            "/api/job-applications/my",
+            {
+                method: "GET",
+
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Accept": "application/json"
+                },
+
+                cache: "no-store"
+            }
+        );
+
+        const result = await response.json();
+
+        if (response.status === 401 ||
+            response.status === 403) {
+
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("authUser");
+
+            sessionStorage.removeItem("authToken");
+            sessionStorage.removeItem("authUser");
+
+            window.location.href =
+                "login.html?returnAfterLogin=my-job-applications.html";
+
+            return;
+        }
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.message ||
+                "Unable to load job applications."
+            );
+        }
+
+        const applications =
+            Array.isArray(result)
+                ? result
+                : (
+                    result.applications ||
+                    result.data ||
+                    []
+                );
+
+        loading.style.display = "none";
+
+        if (!applications.length) {
+
+            empty.style.display = "block";
+
+            return;
+        }
+
+        tableBody.innerHTML = "";
+
+        applications.forEach(function (application) {
+
+            const status =
+                getStatus(application.status);
+
+            const row =
+                document.createElement("tr");
+
+            row.innerHTML = `
+                <td class="job-id-cell">
+                    #${escapeHTML(application.id)}
+                </td>
+
+                <td class="job-title-cell">
+                    ${escapeHTML(
+                        application.job_title ||
+                        application.jobPosition ||
+                        application.position ||
+                        "-"
+                    )}
+                </td>
+
+                <td>
+                    <span class="job-status ${status.className}">
+                        ${status.label}
+                    </span>
+                </td>
+
+                <td>
+                    ${formatDate(
+                        application.created_at ||
+                        application.applied_at ||
+                        application.createdAt
+                    )}
+                </td>
+
+                <td>
+                    ${
+                        application.id
+                        ? `
+                            <button
+    type="button"
+    class="view-resume-btn"
+    data-resume-id="${escapeHTML(application.id)}">
+
+    <i class="fa-solid fa-file-arrow-up"></i>
+    View Resume
+
+</button>
+                        `
+                        : "-"
+                    }
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+
+        });
+
+        tableWrapper.style.display = "block";
+
+    } catch (err) {
+
+        console.error(
+            "MY JOB APPLICATIONS ERROR:",
+            err
+        );
+
+        loading.style.display = "none";
+
+        errorBox.style.display = "block";
+
+        errorText.textContent =
+            err.message ||
+            "Unable to load your job applications.";
+    }
+
+});/* =========================================================
+   MY JOB APPLICATIONS - AUTHENTICATED RESUME VIEW
+========================================================= */
+
+document.addEventListener("click", async function (event) {
+
+    const button =
+        event.target.closest(".view-resume-btn");
+
+    if (!button) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const applicationId =
+        button.getAttribute("data-resume-id");
+
+    if (!applicationId) {
+        return;
+    }
+
+    const token =
+        localStorage.getItem("authToken") ||
+        sessionStorage.getItem("authToken");
+
+    if (!token) {
+
+        window.location.href =
+            "login.html?returnAfterLogin=my-job-applications.html";
+
+        return;
+    }
+
+    const originalHTML =
+        button.innerHTML;
+
+    button.classList.add("loading");
+
+    button.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Opening...';
+
+    try {
+
+        const response = await fetch(
+            `/api/job-applications/applications/${encodeURIComponent(applicationId)}/resume`,
+            {
+                method: "GET",
+
+                headers: {
+                    "Authorization": "Bearer " + token
+                },
+
+                cache: "no-store"
+            }
+        );
+
+        if (response.status === 401 ||
+            response.status === 403) {
+
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("authUser");
+
+            sessionStorage.removeItem("authToken");
+            sessionStorage.removeItem("authUser");
+
+            window.location.href =
+                "login.html?returnAfterLogin=my-job-applications.html";
+
+            return;
+        }
+
+        if (!response.ok) {
+
+            let message =
+                "Unable to open resume.";
+
+            try {
+
+                const data =
+                    await response.json();
+
+                if (data.message) {
+                    message = data.message;
+                }
+
+            } catch (_) {}
+
+            throw new Error(message);
+        }
+
+        const blob =
+            await response.blob();
+
+        const blobUrl =
+            URL.createObjectURL(blob);
+
+        const newWindow =
+            window.open(
+                blobUrl,
+                "_blank",
+                "noopener,noreferrer"
+            );
+
+        if (!newWindow) {
+
+            const downloadLink =
+                document.createElement("a");
+
+            downloadLink.href =
+                blobUrl;
+
+            downloadLink.download =
+                "resume-" + applicationId;
+
+            document.body.appendChild(
+                downloadLink
+            );
+
+            downloadLink.click();
+
+            downloadLink.remove();
+        }
+
+        setTimeout(function () {
+            URL.revokeObjectURL(blobUrl);
+        }, 60000);
+
+    } catch (error) {
+
+        console.error(
+            "RESUME OPEN ERROR:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Unable to open resume."
+        );
+
+    } finally {
+
+        button.classList.remove("loading");
+
+        button.innerHTML =
+            originalHTML;
+    }
+
+});

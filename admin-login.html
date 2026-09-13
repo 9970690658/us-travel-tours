@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Login | U.S TRAVEL & TOURS</title>
+
+    <meta
+        name="description"
+        content="Secure administrator login for U.S TRAVEL & TOURS."
+    >
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <style>
+        /* =========================================
+           ADMIN LOGIN PAGE
+        ========================================= */
+
+        .admin-login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(12, 35, 64, 0.96),
+                    rgba(18, 52, 86, 0.94)
+                );
+        }
+
+        .admin-login-wrapper {
+            width: 100%;
+            max-width: 470px;
+        }
+
+        .admin-login-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 42px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.20);
+        }
+
+        .admin-login-brand {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .admin-login-brand img {
+            display: block;
+            width: 150px;
+            height: 60px;
+            object-fit: contain;
+            margin: 0 auto 22px;
+        }
+
+        .admin-login-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 30px;
+            background: rgba(190, 145, 60, 0.10);
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+        }
+
+        .admin-login-brand h1 {
+            margin: 0 0 10px;
+            font-size: 34px;
+            line-height: 1.2;
+        }
+
+        .admin-login-brand p {
+            margin: 0;
+            color: #6d7480;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .admin-login-form {
+            margin-top: 30px;
+        }
+
+        .admin-form-group {
+            margin-bottom: 20px;
+        }
+
+        .admin-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .admin-form-group input {
+            width: 100%;
+            height: 54px;
+            padding: 0 16px;
+            border: 1px solid #dfe3e8;
+            border-radius: 7px;
+            background: #ffffff;
+            color: #1d2630;
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+            transition: 0.25s ease;
+            box-sizing: border-box;
+        }
+
+        .admin-form-group input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(190, 145, 60, 0.10);
+        }
+
+        .admin-password-wrap {
+            position: relative;
+        }
+
+        .admin-password-wrap input {
+            padding-right: 82px;
+        }
+
+        .admin-password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #68717d;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .admin-password-toggle:hover {
+            color: var(--primary);
+        }
+
+        .admin-login-button {
+            width: 100%;
+            min-height: 54px;
+            border: 0;
+            border-radius: 7px;
+            background: var(--primary);
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.25s ease;
+            margin-top: 5px;
+        }
+
+        .admin-login-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 25px rgba(12, 35, 64, 0.20);
+        }
+
+        .admin-login-button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .admin-login-message {
+            display: none;
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 7px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .admin-login-message.show {
+            display: block;
+        }
+
+        .admin-login-message.error {
+            background: #fff1f1;
+            color: #b42318;
+            border: 1px solid #f3c5c5;
+        }
+
+        .admin-login-message.success {
+            background: #eefaf2;
+            color: #18753c;
+            border: 1px solid #c8e9d2;
+        }
+
+        .admin-login-footer {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .admin-login-footer a {
+            color: var(--gold);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .admin-login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .admin-security-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eceff2;
+            color: #7a828c;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        @media (max-width: 575px) {
+            .admin-login-page {
+                padding: 25px 15px;
+            }
+
+            .admin-login-card {
+                padding: 30px 22px;
+                border-radius: 13px;
+            }
+
+            .admin-login-brand h1 {
+                font-size: 29px;
+            }
+
+            .admin-login-brand img {
+                width: 135px;
+                height: 55px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <main class="admin-login-page">
+
+        <div class="admin-login-wrapper">
+
+            <div class="admin-login-card">
+
+                <div class="admin-login-brand">
+
+                    <img
+                        src="../assets/images/logo.png"
+                        alt="U.S TRAVEL & TOURS"
+                        onerror="this.style.display='none';"
+                    >
+
+                    <div class="admin-login-badge">
+                        🔐 Secure Admin Area
+                    </div>
+
+                    <h1>Admin Login</h1>
+
+                    <p>
+                        Sign in to access the U.S TRAVEL & TOURS
+                        administration panel.
+                    </p>
+
+                </div>
+
+                <form
+                    id="adminLoginForm"
+                    class="admin-login-form"
+                    novalidate
+                >
+
+                    <div class="admin-form-group">
+
+                        <label for="adminEmail">
+                            Admin Email
+                        </label>
+
+                        <input
+                            type="email"
+                            id="adminEmail"
+                            name="email"
+                            placeholder="Enter admin email"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+                    <div class="admin-form-group">
+
+                        <label for="adminPassword">
+                            Password
+                        </label>
+
+                        <div class="admin-password-wrap">
+
+                            <input
+                                type="password"
+                                id="adminPassword"
+                                name="password"
+                                placeholder="Enter admin password"
+                                autocomplete="current-password"
+                                required
+                            >
+
+                            <button
+                                type="button"
+                                class="admin-password-toggle"
+                                id="adminPasswordToggle"
+                            >
+                                Show
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="admin-login-button"
+                        id="adminLoginSubmitBtn"
+                    >
+                        Sign In to Admin Panel
+                    </button>
+
+                    <div
+                        id="adminLoginMessage"
+                        class="admin-login-message"
+                        role="alert"
+                    ></div>
+
+                </form>
+
+                <div class="admin-login-footer">
+
+                    <a href="../login.html">
+                        ← Back to Customer Login
+                    </a>
+
+                </div>
+
+                <div class="admin-security-note">
+                    🛡️ Authorized administrators only
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- MAIN JS ONLY -->
+    <script src="../js/main.js"></script>
+
+
+    <!-- =====================================================
+         ADMIN LOGIN
+         No external admin-login.js required
+    ====================================================== -->
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const form =
+                    document.getElementById(
+                        "adminLoginForm"
+                    );
+
+                const emailInput =
+                    document.getElementById(
+                        "adminEmail"
+                    );
+
+                const passwordInput =
+                    document.getElementById(
+                        "adminPassword"
+                    );
+
+                const passwordToggle =
+                    document.getElementById(
+                        "adminPasswordToggle"
+                    );
+
+                const submitButton =
+                    document.getElementById(
+                        "adminLoginSubmitBtn"
+                    );
+
+                const message =
+                    document.getElementById(
+                        "adminLoginMessage"
+                    );
+
+
+                /* =================================================
+                   MESSAGE
+                ================================================= */
+
+                function showMessage(
+                    text,
+                    type
+                ) {
+
+                    if (!message) {
+                        return;
+                    }
+
+                    message.textContent =
+                        text;
+
+                    message.className =
+                        "admin-login-message show " +
+                        type;
+                }
+
+
+                function clearMessage() {
+
+                    if (!message) {
+                        return;
+                    }
+
+                    message.textContent =
+                        "";
+
+                    message.className =
+                        "admin-login-message";
+                }
+
+
+                /* =================================================
+                   PASSWORD SHOW / HIDE
+                ================================================= */
+
+                if (
+                    passwordToggle &&
+                    passwordInput
+                ) {
+
+                    passwordToggle.addEventListener(
+                        "click",
+                        function () {
+
+                            if (
+                                passwordInput.type ===
+                                "password"
+                            ) {
+
+                                passwordInput.type =
+                                    "text";
+
+                                passwordToggle.textContent =
+                                    "Hide";
+
+                            } else {
+
+                                passwordInput.type =
+                                    "password";
+
+                                passwordToggle.textContent =
+                                    "Show";
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                /* =================================================
+                   ADMIN LOGIN
+                ================================================= */
+
+                if (!form) {
+                    return;
+                }
+
+
+                form.addEventListener(
+                    "submit",
+                    async function (event) {
+
+                        event.preventDefault();
+
+                        clearMessage();
+
+
+                        const email =
+                            emailInput
+                                ?.value
+                                .trim()
+                                .toLowerCase();
+
+
+                        const password =
+                            passwordInput
+                                ?.value
+                                || "";
+
+
+                        /* -----------------------------------------
+                           BASIC VALIDATION
+                        ----------------------------------------- */
+
+                        if (!email) {
+
+                            showMessage(
+                                "Please enter your admin email.",
+                                "error"
+                            );
+
+                            emailInput?.focus();
+
+                            return;
+                        }
+
+
+                        if (!password) {
+
+                            showMessage(
+                                "Please enter your admin password.",
+                                "error"
+                            );
+
+                            passwordInput?.focus();
+
+                            return;
+                        }
+
+
+                        /* -----------------------------------------
+                           DISABLE BUTTON
+                        ----------------------------------------- */
+
+                        if (submitButton) {
+
+                            submitButton.disabled =
+                                true;
+
+                            submitButton.textContent =
+                                "Signing in...";
+
+                        }
+
+
+                        try {
+
+                            /* -------------------------------------
+                               LOGIN API
+                            ------------------------------------- */
+
+                            const response =
+                                await fetch(
+                                    "/api/auth/login",
+                                    {
+                                        method: "POST",
+
+                                        headers: {
+                                            "Content-Type":
+                                                "application/json"
+                                        },
+
+                                        body:
+                                            JSON.stringify({
+                                                email:
+                                                    email,
+                                                password:
+                                                    password
+                                            })
+                                    }
+                                );
+
+
+                            let result = null;
+
+
+                            try {
+
+                                result =
+                                    await response.json();
+
+                            } catch {
+
+                                result = null;
+
+                            }
+
+
+                            console.log(
+                                "Admin login response:",
+                                result
+                            );
+
+
+                            /* -------------------------------------
+                               LOGIN FAILED
+                            ------------------------------------- */
+
+                            if (
+                                !response.ok ||
+                                !result ||
+                                result.success !== true
+                            ) {
+
+                                throw new Error(
+                                    result?.message ||
+                                    "Invalid admin email or password."
+                                );
+
+                            }
+
+
+                            /* -------------------------------------
+                               TOKEN CHECK
+                            ------------------------------------- */
+
+                            if (
+                                !result.token
+                            ) {
+
+                                throw new Error(
+                                    "Login successful, but authentication token was not received."
+                                );
+
+                            }
+
+
+                            /* -------------------------------------
+                               ADMIN ROLE CHECK
+                            ------------------------------------- */
+
+                            if (
+                                !result.user ||
+                                result.user.role !==
+                                    "admin"
+                            ) {
+
+                                throw new Error(
+                                    "This account is not authorized as an administrator."
+                                );
+
+                            }
+
+
+                            /* -------------------------------------
+                               SAVE AUTH SESSION
+                            ------------------------------------- */
+
+                            const remember =
+                                false;
+
+
+                            /*
+                             * Save in sessionStorage.
+                             *
+                             * admin.js supports BOTH:
+                             * localStorage
+                             * sessionStorage
+                             */
+
+                            if (remember) {
+
+                                localStorage.setItem(
+                                    "authToken",
+                                    result.token
+                                );
+
+                                localStorage.setItem(
+                                    "authUser",
+                                    JSON.stringify(
+                                        result.user
+                                    )
+                                );
+
+                            } else {
+
+                                sessionStorage.setItem(
+                                    "authToken",
+                                    result.token
+                                );
+
+                                sessionStorage.setItem(
+                                    "authUser",
+                                    JSON.stringify(
+                                        result.user
+                                    )
+                                );
+
+                            }
+
+
+                            /* -------------------------------------
+                               SUCCESS MESSAGE
+                            ------------------------------------- */
+
+                            showMessage(
+                                "Login successful. Opening admin dashboard...",
+                                "success"
+                            );
+
+
+                            /* -------------------------------------
+                               OPEN DASHBOARD
+                            ------------------------------------- */
+
+                            setTimeout(
+                                function () {
+
+                                    window.location.replace(
+                                        "/admin-dashboard.html"
+                                    );
+
+                                },
+                                300
+                            );
+
+
+                        } catch (error) {
+
+                            console.error(
+                                "Admin login error:",
+                                error
+                            );
+
+
+                            showMessage(
+                                error?.message ||
+                                "Unable to sign in. Please try again.",
+                                "error"
+                            );
+
+
+                            if (submitButton) {
+
+                                submitButton.disabled =
+                                    false;
+
+                                submitButton.textContent =
+                                    "Sign In to Admin Panel";
+
+                            }
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>

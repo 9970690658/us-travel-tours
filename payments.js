@@ -1,840 +1,1185 @@
-const PAYMENT_ENDPOINT =
+/* =========================================================
+   U.S TRAVEL & TOURS
+   PAYMENT JAVASCRIPT
+   Bitcoin + PayPal
+   Frontend → Backend Payment Submission
+   ========================================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    "use strict";
+
+    /* =====================================================
+       ELEMENTS
+       ===================================================== */
+
+    const paymentForm =
+        document.getElementById("paymentForm");
+
+    const paymentMethod =
+        document.getElementById("paymentMethod");
+
+    const paymentReference =
+        document.getElementById("paymentReference");
+
+    const paymentMessage =
+        document.getElementById("paymentMessage");
+
+    const paymentProof =
+        document.getElementById("paymentProof");
+
+    const paymentFileName =
+        document.getElementById("paymentFileName");
+
+    const paymentFormMessage =
+        document.getElementById("paymentFormMessage");
+
+    const paymentSubmitBtn =
+        document.getElementById("paymentSubmitBtn");
+
+    const methodButtons =
+        document.querySelectorAll(".payment-method-btn");
+
+    const paymentPanels =
+        document.querySelectorAll(".payment-panel");
+
+    const copyButtons =
+        document.querySelectorAll(".copy-payment-btn");
+
+
+    /* =====================================================
+       CONFIGURATION
+       ===================================================== */
+
+    const ALLOWED_PAYMENT_METHODS = [
+        "bitcoin",
+        "paypal"
+    ];
+
+    const ALLOWED_FILE_TYPES = [
+        "image/jpeg",
+        "image/png",
+        "application/pdf"
+    ];
+
+    const ALLOWED_FILE_EXTENSIONS = [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".pdf"
+    ];
+
+    const MAX_FILE_SIZE =
+        5 * 1024 * 1024;
+
+   const PAYMENT_ENDPOINT =
     "https://us-travel-tours.onrender.com/api/application-payment";
-const express = require("express");
-const router = express.Router();
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 
-const { db } = require("./database");
-const {
-    requireAuth,
-    requireAdmin
-} = require("./auth");
 
-// =========================================================
-// U.S TRAVEL & TOURS
-// PAYMENT BACKEND
-// Bitcoin + PayPal
-// =========================================================
+    /* =====================================================
+       MESSAGE FUNCTIONS
+       ===================================================== */
 
-// ---------------------------------------------------------
-// PAYMENT PROOF UPLOAD DIRECTORY
-// ---------------------------------------------------------
+    function showMessage(message, type) {
 
-const ROOT_DIR = path.join(__dirname, "..");
-const DATA_DIR = path.join(ROOT_DIR, "data");
-const UPLOAD_DIR = path.join(DATA_DIR, "payment-proofs");
-
-if (!fs.existsSync(UPLOAD_DIR)) {
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-// ---------------------------------------------------------
-// MULTER STORAGE
-// ---------------------------------------------------------
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOAD_DIR);
-    },
-
-    filename: function (req, file, cb) {
-        const extension = path.extname(file.originalname).toLowerCase();
-
-        const uniqueName =
-            `payment-${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`;
-
-        cb(null, uniqueName);
-    }
-});
-
-// ---------------------------------------------------------
-// FILE VALIDATION
-// ---------------------------------------------------------
-
-const upload = multer({
-    storage: storage,
-
-    limits: {
-        fileSize: 5 * 1024 * 1024
-    },
-
-    fileFilter: function (req, file, cb) {
-        const allowedExtensions = [
-            ".jpg",
-            ".jpeg",
-            ".png",
-            ".pdf"
-        ];
-
-        const extension =
-            path.extname(file.originalname).toLowerCase();
-
-        if (!allowedExtensions.includes(extension)) {
-            return cb(
-                new Error(
-                    "Only JPG, JPEG, PNG and PDF files are allowed."
-                )
-            );
+        if (!paymentFormMessage) {
+            return;
         }
 
-        cb(null, true);
+        paymentFormMessage.textContent =
+            message || "";
+
+        paymentFormMessage.classList.remove(
+            "success",
+            "error"
+        );
+
+        if (type) {
+            paymentFormMessage.classList.add(type);
+        }
+
+        if (message) {
+
+            paymentFormMessage.scrollIntoView({
+                behavior: "smooth",
+                block: "nearest"
+            });
+
+        }
+
     }
-});
 
-// =========================================================
-// SAVE PAYMENT
-// POST /api/application-payment
-// =========================================================
 
-router.post(
-    "/",
-    requireAuth,
-    upload.single("paymentProof"),
-    (req, res) => {
+    function clearMessage() {
 
-        try {
+        if (!paymentFormMessage) {
+            return;
+        }
 
-            const {
-                application,
-                paymentMethod,
-                paymentReference,
-                message
-            } = req.body;
+        paymentFormMessage.textContent = "";
 
-            // -------------------------------------------------
-            // APPLICATION VALIDATION
-            // -------------------------------------------------
+        paymentFormMessage.classList.remove(
+            "success",
+            "error"
+        );
 
-            if (!application) {
+    }
 
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
+
+    /* =====================================================
+       PAYMENT METHOD SWITCHING
+       ===================================================== */
+
+    function showPaymentMethod(method) {
+
+        if (!ALLOWED_PAYMENT_METHODS.includes(method)) {
+            method = "bitcoin";
+        }
+
+
+        /* Update method buttons */
+
+        methodButtons.forEach(function (button) {
+
+            const buttonMethod =
+                button.dataset.paymentMethod;
+
+            button.classList.toggle(
+                "active",
+                buttonMethod === method
+            );
+
+            button.setAttribute(
+                "aria-selected",
+                buttonMethod === method
+                    ? "true"
+                    : "false"
+            );
+
+        });
+
+
+        /* Update payment panels */
+
+        paymentPanels.forEach(function (panel) {
+
+            const panelMethod =
+                panel.dataset.panel;
+
+            panel.classList.toggle(
+                "active",
+                panelMethod === method
+            );
+
+        });
+
+
+        /* Update hidden/select payment method */
+
+        if (paymentMethod) {
+            paymentMethod.value = method;
+        }
+
+
+        clearMessage();
+
+    }
+
+
+    /* =====================================================
+       PAYMENT METHOD BUTTONS
+       ===================================================== */
+
+    methodButtons.forEach(function (button) {
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+
+                const method =
+                    this.dataset.paymentMethod;
+
+                if (!method) {
+                    return;
                 }
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Application information is required."
-                });
-            }
-
-            let applicationData;
-
-            try {
-
-                applicationData =
-                    typeof application === "string"
-                        ? JSON.parse(application)
-                        : application;
-
-            } catch (error) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid application information."
-                });
-            }
-
-            // -------------------------------------------------
-            // PAYMENT METHOD
-            // -------------------------------------------------
-
-            const allowedMethods = [
-                "bitcoin",
-                "paypal"
-            ];
-
-            if (!allowedMethods.includes(paymentMethod)) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid payment method. Use Bitcoin or PayPal."
-                });
-            }
-
-            // -------------------------------------------------
-            // PAYMENT REFERENCE
-            // -------------------------------------------------
-
-            if (
-                !paymentReference ||
-                String(paymentReference).trim() === ""
-            ) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Payment reference is required."
-                });
-            }
-
-            const cleanReference =
-                String(paymentReference).trim();
-
-            // -------------------------------------------------
-            // FIND APPLICATION
-            // -------------------------------------------------
-
-            let applicationId = null;
-
-            // Frontend may send applicationId
-            if (applicationData.applicationId) {
-
-                const possibleId =
-                    Number(applicationData.applicationId);
 
                 if (
-                    Number.isInteger(possibleId) &&
-                    possibleId > 0
+                    !ALLOWED_PAYMENT_METHODS.includes(
+                        method
+                    )
                 ) {
-                    applicationId = possibleId;
-                }
-            }
 
-            // -------------------------------------------------
-            // IF NO ID, MATCH USING PASSPORT NUMBER
-            // -------------------------------------------------
-
-            if (!applicationId) {
-
-                const submittedPassport =
-                    String(
-                        applicationData.passportNumber || ""
-                    )
-                    .trim()
-                    .toLowerCase();
-
-                if (submittedPassport) {
-
-                    const applications = db.prepare(`
-                        SELECT
-                            id,
-                            application_data
-                        FROM applications
-                        ORDER BY id DESC
-                    `).all();
-
-                    for (const item of applications) {
-
-                        try {
-
-                            const savedData =
-                                JSON.parse(
-                                    item.application_data
-                                );
-
-                            const savedPassport =
-                                String(
-                                    savedData.passportNumber || ""
-                                )
-                                .trim()
-                                .toLowerCase();
-
-                            if (
-                                savedPassport &&
-                                savedPassport ===
-                                submittedPassport
-                            ) {
-
-                                applicationId = item.id;
-                                break;
-                            }
-
-                        } catch (error) {
-                            // Ignore invalid application JSON
-                        }
-                    }
-                }
-            }
-
-            // -------------------------------------------------
-            // APPLICATION MUST EXIST
-            // -------------------------------------------------
-
-            if (!applicationId) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "Application was not found. Please submit the application again."
-                });
-            }
-
-            const existingApplication = db.prepare(`
-    SELECT
-        id,
-        user_id
-    FROM applications
-    WHERE id = ?
-`).get(applicationId);
-
-if (!existingApplication) {
-
-    if (req.file) {
-        fs.unlinkSync(req.file.path);
-    }
-
-    return res.status(404).json({
-        success: false,
-        message: "Application not found."
-    });
-}
-
-if (
-    req.user.role !== "admin" &&
-    Number(existingApplication.user_id) !== Number(req.user.id)
-) {
-
-    if (req.file) {
-        fs.unlinkSync(req.file.path);
-    }
-
-    return res.status(403).json({
-        success: false,
-        message:
-            "You are not authorized to submit payment for this application."
-    });
-}
-
-            if (!existingApplication) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "Application not found."
-                });
-            }
-
-            // -------------------------------------------------
-            // DUPLICATE PAYMENT REFERENCE CHECK
-            // -------------------------------------------------
-
-            const duplicatePayment = db.prepare(`
-                SELECT
-                    id
-                FROM payments
-                WHERE payment_reference = ?
-            `).get(cleanReference);
-
-            if (duplicatePayment) {
-
-                if (req.file) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                return res.status(409).json({
-                    success: false,
-                    message:
-                        "This payment reference has already been submitted."
-                });
-            }
-
-            // -------------------------------------------------
-            // PAYMENT PROOF FILE
-            // -------------------------------------------------
-
-            let proofFile = null;
-
-            if (req.file) {
-                proofFile = req.file.filename;
-            }
-
-            // -------------------------------------------------
-            // DATABASE TRANSACTION
-            // -------------------------------------------------
-
-            const savePayment = db.transaction(() => {
-
-                const insertPayment = db.prepare(`
-                    INSERT INTO payments (
-                        application_id,
-                        payment_method,
-                        payment_reference,
-                        message,
-                        proof_file,
-                        status
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `);
-
-                const paymentResult =
-                    insertPayment.run(
-                        applicationId,
-                        paymentMethod,
-                        cleanReference,
-                        message
-                            ? String(message).trim()
-                            : null,
-                        proofFile,
-                        "pending"
+                    showMessage(
+                        "Please select Bitcoin or PayPal.",
+                        "error"
                     );
 
-                const paymentId =
-                    paymentResult.lastInsertRowid;
+                    return;
+                }
 
-                db.prepare(`
-                    UPDATE applications
-                    SET
-                        status = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                `).run(
-                    "payment_submitted",
-                    applicationId
-                );
+                showPaymentMethod(method);
 
-                return paymentId;
-            });
+            }
+        );
 
-            const paymentId = savePayment();
+    });
 
-            // -------------------------------------------------
-            // SUCCESS LOG
-            // -------------------------------------------------
 
-            console.log(
-                "----------------------------------------------"
-            );
+    /* =====================================================
+       PAYMENT METHOD SELECT
+       ===================================================== */
 
-            console.log(
-                `Payment submitted successfully.`
-            );
+    if (paymentMethod) {
 
-            console.log(
-                `Payment ID: ${paymentId}`
-            );
+        paymentMethod.addEventListener(
+            "change",
+            function () {
 
-            console.log(
-                `Application ID: ${applicationId}`
-            );
+                const method =
+                    this.value;
 
-            console.log(
-                `Payment Method: ${paymentMethod}`
-            );
+                if (
+                    ALLOWED_PAYMENT_METHODS.includes(
+                        method
+                    )
+                ) {
 
-            console.log(
-                "----------------------------------------------"
-            );
+                    showPaymentMethod(method);
 
-            // -------------------------------------------------
-            // RESPONSE
-            // -------------------------------------------------
+                } else {
 
-            return res.status(201).json({
+                    showPaymentMethod("bitcoin");
 
-                success: true,
+                }
 
-                message:
-    "Payment details submitted successfully. Your payment is pending verification.",
+            }
+        );
 
-                paymentId: paymentId,
+    }
 
-                applicationId: applicationId,
 
-                paymentMethod: paymentMethod,
+    /* =====================================================
+       COPY PAYMENT DETAILS
+       ===================================================== */
 
-                status: "pending"
-            });
+    copyButtons.forEach(function (button) {
 
-        } catch (error) {
+        button.addEventListener(
+            "click",
+            async function (event) {
 
-            console.error(
-                "Payment submission error:",
-                error
-            );
+                event.preventDefault();
 
-            // Remove uploaded file if database operation fails
-            if (req.file) {
+                const targetId =
+                    this.dataset.copyTarget;
+
+                if (!targetId) {
+                    return;
+                }
+
+                const target =
+                    document.getElementById(targetId);
+
+                if (!target) {
+                    return;
+                }
+
+
+                let value = "";
+
+                if (
+                    "value" in target &&
+                    target.value
+                ) {
+
+                    value =
+                        target.value.trim();
+
+                } else {
+
+                    value =
+                        target.textContent.trim();
+
+                }
+
+
+                if (!value) {
+
+                    showMessage(
+                        "Payment details are not available.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                const originalHTML =
+                    this.innerHTML;
+
 
                 try {
-                    if (fs.existsSync(req.file.path)) {
-                        fs.unlinkSync(req.file.path);
+
+                    if (
+                        navigator.clipboard &&
+                        window.isSecureContext
+                    ) {
+
+                        await navigator.clipboard.writeText(
+                            value
+                        );
+
+                    } else {
+
+                        const temporaryInput =
+                            document.createElement("textarea");
+
+                        temporaryInput.value =
+                            value;
+
+                        temporaryInput.style.position =
+                            "fixed";
+
+                        temporaryInput.style.opacity =
+                            "0";
+
+                        document.body.appendChild(
+                            temporaryInput
+                        );
+
+                        temporaryInput.focus();
+                        temporaryInput.select();
+
+                        document.execCommand(
+                            "copy"
+                        );
+
+                        temporaryInput.remove();
+
                     }
-                } catch (fileError) {
+
+
+                    this.innerHTML =
+                        '<i class="fa-solid fa-check"></i> Copied';
+
+                    this.classList.add("copied");
+
+
+                    setTimeout(
+                        function () {
+
+                            button.innerHTML =
+                                originalHTML;
+
+                            button.classList.remove(
+                                "copied"
+                            );
+
+                        },
+                        1800
+                    );
+
+
+                } catch (error) {
+
                     console.error(
-                        "Unable to remove uploaded payment proof:",
-                        fileError
+                        "Copy payment details error:",
+                        error
+                    );
+
+                    showMessage(
+                        "Unable to copy automatically. Please copy the payment details manually.",
+                        "error"
+                    );
+
+                }
+
+            }
+        );
+
+    });
+
+
+    /* =====================================================
+       PAYMENT PROOF VALIDATION
+       ===================================================== */
+
+    function validatePaymentProof(file) {
+
+        if (!file) {
+            return true;
+        }
+
+
+        const fileName =
+            file.name.toLowerCase();
+
+
+        const extensionAllowed =
+            ALLOWED_FILE_EXTENSIONS.some(
+                function (extension) {
+                    return fileName.endsWith(
+                        extension
                     );
                 }
-            }
+            );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Unable to submit payment details. Please try again."
-            });
-        }
-    }
-);
 
-// =========================================================
-// GET PAYMENT BY ID
-// GET /api/payments/:id
-// =========================================================
+        const typeAllowed =
+            ALLOWED_FILE_TYPES.includes(
+                file.type
+            );
 
-router.get("/:id", requireAuth, (req, res) => {
-
-    try {
-
-        const paymentId =
-            Number(req.params.id);
 
         if (
-            !Number.isInteger(paymentId) ||
-            paymentId <= 0
+            !extensionAllowed &&
+            !typeAllowed
         ) {
 
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Invalid payment ID."
-            });
+            return false;
+
         }
 
-        const payment = db.prepare(`
-            SELECT
-                id,
-                application_id,
-                payment_method,
-                payment_reference,
-                message,
-                proof_file,
-                status,
-                created_at,
-                updated_at
-            FROM payments
-            WHERE id = ?
-        `).get(paymentId);
 
-        if (!payment) {
+        if (file.size > MAX_FILE_SIZE) {
 
-            return res.status(404).json({
-                success: false,
-                message:
-                    "Payment not found."
-            });
+            return false;
+
         }
 
-        return res.json({
-            success: true,
-            payment: payment
-        });
 
-    } catch (error) {
+        return true;
 
-        console.error(
-            "Get payment error:",
-            error
+    }
+
+
+    /* =====================================================
+       PAYMENT PROOF FILE INPUT
+       ===================================================== */
+
+    if (paymentProof) {
+
+        paymentProof.addEventListener(
+            "change",
+            function () {
+
+                clearMessage();
+
+
+                const file =
+                    this.files &&
+                    this.files[0];
+
+
+                if (!file) {
+
+                    if (paymentFileName) {
+                        paymentFileName.textContent = "";
+                    }
+
+                    return;
+
+                }
+
+
+                const fileName =
+                    file.name.toLowerCase();
+
+
+                const extensionAllowed =
+                    ALLOWED_FILE_EXTENSIONS.some(
+                        function (extension) {
+
+                            return fileName.endsWith(
+                                extension
+                            );
+
+                        }
+                    );
+
+
+                const typeAllowed =
+                    ALLOWED_FILE_TYPES.includes(
+                        file.type
+                    );
+
+
+                if (
+                    !extensionAllowed &&
+                    !typeAllowed
+                ) {
+
+                    this.value = "";
+
+                    if (paymentFileName) {
+                        paymentFileName.textContent = "";
+                    }
+
+                    showMessage(
+                        "Please upload a JPG, PNG or PDF payment proof.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                if (
+                    file.size > MAX_FILE_SIZE
+                ) {
+
+                    this.value = "";
+
+                    if (paymentFileName) {
+                        paymentFileName.textContent = "";
+                    }
+
+                    showMessage(
+                        "Payment proof must be 5 MB or smaller.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                if (paymentFileName) {
+
+                    paymentFileName.textContent =
+                        "✓ " + file.name;
+
+                }
+
+
+                clearMessage();
+
+            }
         );
 
-        return res.status(500).json({
-            success: false,
-            message:
-                "Unable to retrieve payment."
-        });
     }
-});
 
-// =========================================================
-// GET PAYMENTS FOR APPLICATION
-// GET /api/payments/application/:applicationId
-// =========================================================
 
-router.get(
-    "/application/:applicationId",
-    requireAuth,
-    (req, res) => {
+    /* =====================================================
+       VALIDATE PAYMENT FORM
+       ===================================================== */
+
+    function validatePaymentForm() {
+
+        clearMessage();
+
+
+        /* Payment method */
+
+        if (!paymentMethod) {
+
+            showMessage(
+                "Payment method field is missing.",
+                "error"
+            );
+
+            return false;
+
+        }
+
+
+        const selectedMethod =
+            paymentMethod.value;
+
+
+        if (
+            !ALLOWED_PAYMENT_METHODS.includes(
+                selectedMethod
+            )
+        ) {
+
+            showMessage(
+                "Please select Bitcoin or PayPal.",
+                "error"
+            );
+
+            paymentMethod.focus();
+
+            return false;
+
+        }
+
+
+        /* Payment reference */
+
+        if (
+            !paymentReference ||
+            !paymentReference.value.trim()
+        ) {
+
+            showMessage(
+                "Please enter your transaction or payment reference.",
+                "error"
+            );
+
+            if (paymentReference) {
+                paymentReference.focus();
+            }
+
+            return false;
+
+        }
+
+
+        const reference =
+            paymentReference.value.trim();
+
+
+        if (reference.length < 3) {
+
+            showMessage(
+                "Please enter a valid transaction or payment reference.",
+                "error"
+            );
+
+            paymentReference.focus();
+
+            return false;
+
+        }
+
+
+        if (reference.length > 150) {
+
+            showMessage(
+                "Payment reference must be 150 characters or fewer.",
+                "error"
+            );
+
+            paymentReference.focus();
+
+            return false;
+
+        }
+
+
+        /* Payment proof */
+
+        if (
+            paymentProof &&
+            paymentProof.files &&
+            paymentProof.files.length > 0
+        ) {
+
+            const file =
+                paymentProof.files[0];
+
+
+            const fileName =
+                file.name.toLowerCase();
+
+
+            const extensionAllowed =
+                ALLOWED_FILE_EXTENSIONS.some(
+                    function (extension) {
+                        return fileName.endsWith(
+                            extension
+                        );
+                    }
+                );
+
+
+            const typeAllowed =
+                ALLOWED_FILE_TYPES.includes(
+                    file.type
+                );
+
+
+            if (
+                !extensionAllowed &&
+                !typeAllowed
+            ) {
+
+                showMessage(
+                    "Please upload a JPG, PNG or PDF payment proof.",
+                    "error"
+                );
+
+                paymentProof.focus();
+
+                return false;
+
+            }
+
+
+            if (
+                file.size > MAX_FILE_SIZE
+            ) {
+
+                showMessage(
+                    "Payment proof must be 5 MB or smaller.",
+                    "error"
+                );
+
+                paymentProof.focus();
+
+                return false;
+
+            }
+
+        }
+
+
+        return true;
+
+    }
+
+
+    /* =====================================================
+       GET PENDING APPLICATION
+       ===================================================== */
+
+    function getPendingApplication() {
 
         try {
 
-            const applicationId =
-                Number(req.params.applicationId);
+            const savedApplication =
+                sessionStorage.getItem(
+                    "pendingApplication"
+                );
 
-            if (
-                !Number.isInteger(applicationId) ||
-                applicationId <= 0
-            ) {
 
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid application ID."
-                });
+            if (!savedApplication) {
+                return null;
             }
 
-            const payments = db.prepare(`
-                SELECT
-                    id,
-                    application_id,
-                    payment_method,
-                    payment_reference,
-                    message,
-                    proof_file,
-                    status,
-                    created_at,
-                    updated_at
-                FROM payments
-                WHERE application_id = ?
-                ORDER BY created_at DESC
-            `).all(applicationId);
 
-            return res.json({
-                success: true,
-                count: payments.length,
-                payments: payments
-            });
+            const application =
+                JSON.parse(
+                    savedApplication
+                );
+
+
+            if (
+                !application ||
+                typeof application !== "object"
+            ) {
+
+                return null;
+
+            }
+
+
+            return application;
 
         } catch (error) {
 
             console.error(
-                "Get application payments error:",
+                "Unable to read pending application:",
                 error
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Unable to retrieve application payments."
-            });
+            return null;
+
         }
+
     }
-);
 
-// =========================================================
-// UPDATE PAYMENT STATUS
-// PATCH /api/payments/:id/status
-// =========================================================
 
-router.patch(
-    "/:id/status",
-    requireAdmin,
-    (req, res) => {
+    /* =====================================================
+       BUTTON LOADING STATE
+       ===================================================== */
 
-        try {
+    function setButtonLoading(
+        isLoading,
+        originalHTML
+    ) {
 
-            const paymentId =
-                Number(req.params.id);
+        if (!paymentSubmitBtn) {
+            return;
+        }
 
-            const { status } = req.body;
 
-            const allowedStatuses = [
-                "pending",
-                "verified",
-                "rejected"
-            ];
+        if (isLoading) {
 
-            if (
-                !Number.isInteger(paymentId) ||
-                paymentId <= 0
-            ) {
+            paymentSubmitBtn.disabled =
+                true;
 
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid payment ID."
-                });
-            }
-
-            if (!allowedStatuses.includes(status)) {
-
-                return res.status(400).json({
-                    success: false,
-                    message:
-                        "Invalid payment status."
-                });
-            }
-
-            const payment = db.prepare(`
-                SELECT
-                    application_id
-                FROM payments
-                WHERE id = ?
-            `).get(paymentId);
-
-            if (!payment) {
-
-                return res.status(404).json({
-                    success: false,
-                    message:
-                        "Payment not found."
-                });
-            }
-
-            let applicationStatus =
-                "payment_submitted";
-
-            if (status === "verified") {
-                applicationStatus =
-                    "under_review";
-            }
-
-            if (status === "rejected") {
-                applicationStatus =
-                    "payment_pending";
-            }
-
-            const updatePayment =
-                db.transaction(() => {
-
-                    db.prepare(`
-                        UPDATE payments
-                        SET
-                            status = ?,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    `).run(
-                        status,
-                        paymentId
-                    );
-
-                    db.prepare(`
-                        UPDATE applications
-                        SET
-                            status = ?,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    `).run(
-                        applicationStatus,
-                        payment.application_id
-                    );
-                });
-
-            updatePayment();
-
-            return res.json({
-                success: true,
-                message:
-                    "Payment status updated successfully.",
-                paymentId: paymentId,
-                status: status,
-                applicationStatus:
-                    applicationStatus
-            });
-
-        } catch (error) {
-
-            console.error(
-                "Update payment status error:",
-                error
+            paymentSubmitBtn.setAttribute(
+                "aria-busy",
+                "true"
             );
 
-            return res.status(500).json({
-                success: false,
-                message:
-                    "Unable to update payment status."
-            });
+            paymentSubmitBtn.innerHTML =
+                '<span>Submitting Payment...</span>' +
+                '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        } else {
+
+            paymentSubmitBtn.disabled =
+                false;
+
+            paymentSubmitBtn.removeAttribute(
+                "aria-busy"
+            );
+
+            if (originalHTML) {
+
+                paymentSubmitBtn.innerHTML =
+                    originalHTML;
+
+            }
+
         }
+
     }
+
+
+    /* =====================================================
+       FORM SUBMISSION
+       ===================================================== */
+
+    if (paymentForm) {
+
+        paymentForm.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+
+                /* Prevent accidental double submit */
+
+                if (
+                    paymentSubmitBtn &&
+                    paymentSubmitBtn.disabled
+                ) {
+
+                    return;
+
+                }
+
+
+                /* Validate */
+
+                if (!validatePaymentForm()) {
+                    return;
+                }
+
+
+                /* Get application */
+
+                const pendingApplication =
+                    getPendingApplication();
+
+
+                if (!pendingApplication) {
+
+                    showMessage(
+                        "Your application information could not be found. Please return to the application page and submit the application again.",
+                        "error"
+                    );
+
+                    return;
+
+                }
+
+
+                const originalButtonHTML =
+                    paymentSubmitBtn
+                        ? paymentSubmitBtn.innerHTML
+                        : "";
+
+
+                setButtonLoading(
+                    true,
+                    originalButtonHTML
+                );
+
+
+                try {
+
+                    /* =================================================
+                       BUILD FORM DATA
+                       ================================================= */
+
+                    const formData =
+                        new FormData();
+
+
+                    /* Application */
+
+                    formData.append(
+                        "application",
+                        JSON.stringify(
+                            pendingApplication
+                        )
+                    );
+
+
+                    /* Payment method */
+
+                    formData.append(
+                        "paymentMethod",
+                        paymentMethod.value
+                    );
+
+
+                    /* Transaction/reference */
+
+                    formData.append(
+                        "paymentReference",
+                        paymentReference.value.trim()
+                    );
+
+
+                    /* Optional message */
+
+                    if (paymentMessage) {
+
+                        formData.append(
+                            "message",
+                            paymentMessage.value.trim()
+                        );
+
+                    }
+
+
+                    /* Optional proof */
+
+                    if (
+                        paymentProof &&
+                        paymentProof.files &&
+                        paymentProof.files.length > 0
+                    ) {
+
+                        formData.append(
+                            "paymentProof",
+                            paymentProof.files[0]
+                        );
+
+                    }
+
+
+                    /* =================================================
+                       SEND TO BACKEND
+                       ================================================= */
+
+                    const response =
+                        await fetch(
+                            PAYMENT_ENDPOINT,
+                            {
+                                method: "POST",
+                                body: formData,
+                                headers: {
+                                    "Accept":
+                                        "application/json"
+                                }
+                            }
+                        );
+
+
+                    /* =================================================
+                       READ SERVER RESPONSE
+                       ================================================= */
+
+                    let result = null;
+
+
+                    try {
+
+                        result =
+                            await response.json();
+
+                    } catch (jsonError) {
+
+                        result = null;
+
+                    }
+
+
+                    /* =================================================
+                       BACKEND ERROR
+                       ================================================= */
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            result &&
+                            result.message
+                                ? result.message
+                                : "Unable to submit your payment right now. Please try again."
+                        );
+
+                    }
+
+
+                    /* =================================================
+   SUCCESS
+================================================= */
+
+if (
+    !result ||
+    !result.success
+) {
+
+    throw new Error(
+        result && result.message
+            ? result.message
+            : "Payment submission failed."
+    );
+
+}
+
+
+/* Save application ID */
+
+if (result.applicationId) {
+
+    sessionStorage.setItem(
+        "applicationId",
+        String(result.applicationId)
+    );
+
+}
+
+
+/* Remove temporary application */
+
+sessionStorage.removeItem(
+    "pendingApplication"
 );
 
-// =========================================================
-// GET ALL PAYMENTS
-// GET /api/payments
-// =========================================================
 
-router.get("/", requireAdmin, (req, res) => {
+/* Redirect to success page */
 
-    try {
+window.location.href =
+    "success.html";
 
-        const payments = db.prepare(`
-            SELECT
-                p.id,
-                p.application_id,
-                p.payment_method,
-                p.payment_reference,
-                p.message,
-                p.proof_file,
-                p.status,
-                p.created_at,
-                p.updated_at
-            FROM payments p
-            ORDER BY p.created_at DESC
-        `).all();
 
-        return res.json({
-            success: true,
-            count: payments.length,
-            payments: payments
-        });
+                } catch (error) {
 
-    } catch (error) {
+                    console.error(
+                        "Payment submission error:",
+                        error
+                    );
 
-        console.error(
-            "Get payments error:",
-            error
+
+                    showMessage(
+                        error.message ||
+                        "Unable to submit your payment right now. Please try again later.",
+                        "error"
+                    );
+
+
+                    /* Restore button */
+
+                    setButtonLoading(
+                        false,
+                        originalButtonHTML
+                    );
+
+                }
+
+            }
         );
 
-        return res.status(500).json({
-            success: false,
-            message:
-                "Unable to retrieve payments."
-        });
     }
+
+
+    /* =====================================================
+       CLEAR ERROR WHEN USER EDITS FORM
+       ===================================================== */
+
+    if (paymentReference) {
+
+        paymentReference.addEventListener(
+            "input",
+            function () {
+
+                if (
+                    paymentFormMessage &&
+                    paymentFormMessage.classList.contains(
+                        "error"
+                    )
+                ) {
+
+                    clearMessage();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    if (paymentMessage) {
+
+        paymentMessage.addEventListener(
+            "input",
+            function () {
+
+                if (
+                    paymentFormMessage &&
+                    paymentFormMessage.classList.contains(
+                        "error"
+                    )
+                ) {
+
+                    clearMessage();
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* =====================================================
+       INITIAL PAYMENT METHOD
+       ===================================================== */
+
+    if (
+        paymentMethod &&
+        ALLOWED_PAYMENT_METHODS.includes(
+            paymentMethod.value
+        )
+    ) {
+
+        showPaymentMethod(
+            paymentMethod.value
+        );
+
+    } else {
+
+        showPaymentMethod(
+            "bitcoin"
+        );
+
+    }
+
+
+    /* =====================================================
+       REMOVE USDT FROM ANY OLD PAYMENT ELEMENT
+       ===================================================== */
+
+    document
+        .querySelectorAll(
+            '[data-payment-method="usdt"], [data-panel="usdt"]'
+        )
+        .forEach(function (element) {
+
+            element.remove();
+
+        });
+
+
+    /* =====================================================
+       FINAL LOG
+       ===================================================== */
+
+    console.log(
+        "U.S TRAVEL & TOURS payment system initialized."
+    );
+
 });
-
-// =========================================================
-// MULTER ERROR HANDLER
-// =========================================================
-
-router.use((error, req, res, next) => {
-
-    if (error instanceof multer.MulterError) {
-
-        if (error.code === "LIMIT_FILE_SIZE") {
-
-            return res.status(400).json({
-                success: false,
-                message:
-                    "Payment proof must be 5MB or smaller."
-            });
-        }
-
-        return res.status(400).json({
-            success: false,
-            message:
-                "Payment proof upload failed."
-        });
-    }
-
-    if (error) {
-
-        return res.status(400).json({
-            success: false,
-            message:
-                error.message ||
-                "Payment request failed."
-        });
-    }
-
-    next();
-});
-
-// =========================================================
-// EXPORT
-// =========================================================
-
-module.exports = router;

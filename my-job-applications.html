@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Job Applications | U.S TRAVEL & TOURS</title>
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <style>
+        /* =====================================================
+           MY JOB APPLICATIONS PAGE
+        ===================================================== */
+
+        .my-jobs-page {
+            min-height: 75vh;
+            background: var(--off-white);
+        }
+
+        .my-jobs-section {
+            width: 100%;
+            padding: 90px 0 110px;
+        }
+
+        .my-jobs-container {
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 25px;
+            box-sizing: border-box;
+        }
+
+        /* HEADER */
+
+        .my-jobs-header {
+            max-width: 760px;
+            margin: 0 auto 45px;
+            text-align: center;
+        }
+
+        .my-jobs-eyebrow {
+            display: inline-block;
+            margin-bottom: 13px;
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .my-jobs-header h1 {
+            margin: 0 0 16px;
+            font-size: clamp(34px, 5vw, 50px);
+            line-height: 1.15;
+        }
+
+        .my-jobs-header p {
+            max-width: 680px;
+            margin: 0 auto;
+            color: var(--text-light);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        /* MAIN CARD */
+
+        .my-jobs-card {
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06);
+        }
+
+        /* LOADING */
+
+        .my-jobs-loading {
+            padding: 70px 25px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        .my-jobs-loading i {
+            margin-right: 8px;
+        }
+
+        /* TABLE */
+
+        .my-jobs-table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .my-jobs-table {
+            width: 100%;
+            min-width: 760px;
+            border-collapse: collapse;
+        }
+
+        .my-jobs-table thead th {
+            padding: 18px 22px;
+            background: #f8f8f8;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-light);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .my-jobs-table tbody td {
+            padding: 21px 22px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .my-jobs-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .my-jobs-table tbody tr:hover {
+            background: #fcfcfc;
+        }
+
+        .job-id {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .job-position {
+            font-weight: 700;
+        }
+
+        /* STATUS */
+
+        .job-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 13px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .status-submitted {
+            color: #856404;
+            background: #fff3cd;
+        }
+
+        .status-reviewing {
+            color: #2456a6;
+            background: #e7f0ff;
+        }
+
+        .status-shortlisted {
+            color: #167344;
+            background: #e5f8ed;
+        }
+
+        .status-accepted {
+            color: #116b36;
+            background: #dff7e8;
+        }
+
+        .status-rejected {
+            color: #b42323;
+            background: #ffe7e7;
+        }
+
+        /* RESUME BUTTON */
+
+        .view-resume-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            min-height: 40px;
+            padding: 9px 14px;
+
+            border: 1px solid var(--border);
+            border-radius: 7px;
+
+            background: #ffffff;
+            color: var(--primary);
+
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+
+        .view-resume-btn:hover {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .view-resume-btn.loading {
+            opacity: .65;
+            pointer-events: none;
+        }
+
+        /* EMPTY */
+
+        .my-jobs-empty {
+            padding: 75px 25px;
+            text-align: center;
+        }
+
+        .my-jobs-empty-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 50%;
+            background: #f3f3f3;
+            color: var(--primary);
+
+            font-size: 27px;
+        }
+
+        .my-jobs-empty h3 {
+            margin: 0 0 9px;
+            font-size: 22px;
+        }
+
+        .my-jobs-empty p {
+            margin: 0;
+            color: var(--text-light);
+            line-height: 1.7;
+        }
+
+        /* ERROR */
+
+        .my-jobs-error {
+            padding: 70px 25px;
+            text-align: center;
+            color: #b42323;
+        }
+
+        .my-jobs-error i {
+            font-size: 32px;
+            margin-bottom: 16px;
+        }
+
+        .my-jobs-error h3 {
+            margin: 0 0 8px;
+        }
+
+        .my-jobs-error p {
+            margin: 0;
+            color: var(--text-light);
+        }
+
+        /* MOBILE */
+
+        @media (max-width: 768px) {
+
+            .my-jobs-section {
+                padding: 65px 0 80px;
+            }
+
+            .my-jobs-container {
+                padding: 0 16px;
+            }
+
+            .my-jobs-header {
+                margin-bottom: 30px;
+            }
+
+            .my-jobs-header h1 {
+                font-size: 34px;
+            }
+
+            .my-jobs-header p {
+                font-size: 14px;
+                line-height: 1.7;
+            }
+
+            .my-jobs-card {
+                border-radius: 12px;
+            }
+
+            .my-jobs-table {
+                min-width: 720px;
+            }
+        }
+
+        @media (max-width: 480px) {
+
+            .my-jobs-section {
+                padding: 55px 0 70px;
+            }
+
+            .my-jobs-container {
+                padding: 0 12px;
+            }
+
+            .my-jobs-header h1 {
+                font-size: 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+  <header class="main-header" id="mainHeader">
+
+        <div class="container nav-container">
+
+            <!-- Logo Area -->
+            <a href="index.html" class="brand">
+
+                <!-- Logo 1 -->
+                <div class="logo-placeholder logo-one">
+                    <img
+                        src="../assets\images\logo-1.png.jpeg"
+                        alt="U.S TRAVEL & TOURS Logo"
+                        onerror="this.style.display='none'"
+                    >
+
+                    <span>LOGO</span>
+                </div>
+
+                <div class="brand-text">
+                    <strong>U.S TRAVEL</strong>
+                    <span>& TOURS</span>
+                </div>
+
+            </a>
+
+
+            <!-- Desktop Navigation -->
+            <nav class="desktop-nav">
+
+                <a href="index.html" class="active">
+                    Home<nav class="nav-menu"></nav>
+                </a>
+
+                <a href="about.html">
+                    About Us
+                </a>
+
+                <a href="services.html">
+                    Services
+                </a>
+
+ <a href="destinations.html">
+                    destination
+                </a>
+
+
+                <a href="visa.html">
+                    Visa 
+                </a>
+
+                <a href="jobs.html">
+                    Jobs 
+                </a>
+                
+                <a href="contact.html">
+                    Contact
+                </a>
+
+ <a href="status.html">
+                Check Status
+           
+
+                <a href="login.html" class="nav-login">
+                    <i class="fa-regular fa-user"></i>
+                    Login
+                </a>
+                
+
+                <a href="application.html" class="nav-apply">
+                    Apply Now
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+
+            </nav>
+
+
+            <!-- Mobile Menu Button -->
+            <button
+                class="mobile-menu-btn"
+                id="mobileMenuBtn"
+                aria-label="Open navigation menu"
+                type="button"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
+        </div>
+
+
+        <!-- Mobile Navigation -->
+        <div class="mobile-nav" id="mobileNav">
+
+            <a href="index.html">
+                Home
+            </a>
+
+            <a href="about.html">
+                About Us
+            </a>
+
+            <a href="services.html">
+                Services
+            </a>
+<a href="destinations.html">
+                    destination
+                </a>
+            <a href="visa.html">
+                Visa Information
+            </a>
+
+            <a href="opportunities.html">
+                Opportunities
+            </a>
+
+            <a href="contact.html">
+                Contact
+            </a>
+
+    <a href="status.html">
+                Check Status
+            </a>
+
+
+
+            <a href="login.html">
+                Login
+            </a>
+
+            <a href="application.html" class="mobile-apply">
+                Apply Now
+                <i class="fa-solid fa-arrow-right"></i>
+            </a>
+
+        </div>
+
+    </header>
+
+
+<main class="my-jobs-page">
+
+    <section class="my-jobs-section">
+
+        <div class="my-jobs-container">
+
+            <div class="my-jobs-header">
+
+                <span class="my-jobs-eyebrow">
+                    CAREER APPLICATIONS
+                </span>
+
+                <h1>
+                    My Job Applications
+                </h1>
+
+                <p>
+                    Track your submitted job applications and view the
+                    latest status updated by our recruitment team.
+                </p>
+
+            </div>
+
+
+            <div class="my-jobs-card">
+
+                <!-- LOADING -->
+
+                <div id="myJobsLoading"
+                     class="my-jobs-loading">
+
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    Loading your applications...
+
+                </div>
+
+
+                <!-- EMPTY -->
+
+                <div id="myJobsEmpty"
+                     class="my-jobs-empty"
+                     style="display:none;">
+
+                    <div class="my-jobs-empty-icon">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+
+                    <h3>
+                        No Job Applications Yet
+                    </h3>
+
+                    <p>
+                        You have not applied for any job opportunities yet.
+                    </p>
+
+                </div>
+
+
+                <!-- ERROR -->
+
+                <div id="myJobsError"
+                     class="my-jobs-error"
+                     style="display:none;">
+
+                    <i class="fa-solid fa-circle-exclamation"></i>
+
+                    <h3>
+                        Unable to Load Applications
+                    </h3>
+
+                    <p id="myJobsErrorText">
+                        Please try again later.
+                    </p>
+
+                </div>
+
+
+                <!-- TABLE -->
+
+                <div id="myJobsTableWrapper"
+                     class="my-jobs-table-wrapper"
+                     style="display:none;">
+
+                    <table class="my-jobs-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Application
+                                </th>
+
+                                <th>
+                                    Job Position
+                                </th>
+
+                                <th>
+                                    Status
+                                </th>
+
+                                <th>
+                                    Applied On
+                                </th>
+
+                                <th>
+                                    Resume
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="myJobsTableBody"></tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+<!-- =========================================================
+     LIVE SUPPORT CHAT
+========================================================= -->
+
+<div class="floating-support">
+    <button
+        type="button"
+        id="openChatBtn"
+        aria-label="Open live support"
+    >
+        <i class="fa-solid fa-comments"></i>
+        <span>Live Support</span>
+    </button>
+</div>
+
+<div
+    class="chat-window"
+    id="chatWindow"
+    aria-hidden="true"
+>
+
+    <!-- CHAT HEADER -->
+    <div class="chat-header">
+
+        <div class="chat-header-info">
+
+            <div class="chat-avatar">
+                <i class="fa-solid fa-headset"></i>
+            </div>
+
+            <div>
+                <h3>Live Support</h3>
+
+                <span class="chat-online">
+                    <span class="chat-online-dot"></span>
+                    Online
+                </span>
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            id="closeChatBtn"
+            class="chat-close-btn"
+            aria-label="Close chat"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+    </div>
+
+
+    <!-- CHAT MESSAGES -->
+    <div
+        class="chat-messages"
+        id="chatMessages"
+    >
+
+        <div class="chat-welcome">
+
+            <div class="chat-welcome-icon">
+                <i class="fa-solid fa-headset"></i>
+            </div>
+
+            <h4>Welcome to U.S TRAVEL & TOURS</h4>
+
+            <p>
+                How can we help you today?
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- CHAT FORM -->
+    <form
+        class="chat-form"
+        id="chatForm"
+        autocomplete="off"
+    >
+
+        <input
+            type="text"
+            id="chatInput"
+            name="message"
+            placeholder="Type your message..."
+            maxlength="2000"
+            autocomplete="off"
+            required
+        >
+
+        <button
+            type="submit"
+            id="chatSendBtn"
+            aria-label="Send message"
+        >
+            <i class="fa-solid fa-paper-plane"></i>
+        </button>
+
+    </form>
+
+</div>
+   <script src="/js/main.js"></script>
+<script src="/js/chat.js?v=2"></script> 
+<script src="../js/main.js"></script>
+<script src="../js/jobs.js"></script>
+
+</body>
+</html>

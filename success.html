@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Application Submitted | U.S TRAVEL & TOURS</title>
+
+    <link
+        rel="stylesheet"
+        href="../css/style.css"
+    >
+
+    <style>
+
+        .success-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            background: var(--off-white);
+        }
+
+        .success-card {
+            width: 100%;
+            max-width: 680px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 55px 45px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
+        }
+
+        .success-icon {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(34, 139, 84, 0.10);
+            color: #228b54;
+            font-size: 38px;
+            font-weight: 700;
+        }
+
+        .success-card h1 {
+            margin: 0 0 15px;
+            font-size: clamp(32px, 5vw, 46px);
+        }
+
+        .success-card > p {
+            margin: 0 auto 30px;
+            max-width: 560px;
+            color: var(--text-light);
+            line-height: 1.8;
+        }
+
+        .application-id-box {
+            margin: 30px 0;
+            padding: 22px;
+            background: var(--off-white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .application-id-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-light);
+        }
+
+        .application-id {
+            display: block;
+            font-size: 25px;
+            font-weight: 700;
+            color: var(--primary);
+            letter-spacing: 1px;
+            word-break: break-word;
+        }
+
+        .status-box {
+            margin-bottom: 30px;
+            padding: 18px 20px;
+            border-radius: 8px;
+            background: rgba(201, 162, 77, 0.10);
+            border: 1px solid rgba(201, 162, 77, 0.25);
+        }
+
+        .status-box strong {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .status-box span {
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        .success-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .success-actions .btn {
+            min-width: 190px;
+            text-decoration: none;
+        }
+
+        @media (max-width: 600px) {
+
+            .success-page {
+                padding: 25px 15px;
+            }
+
+            .success-card {
+                padding: 40px 22px;
+            }
+
+            .success-icon {
+                width: 65px;
+                height: 65px;
+                font-size: 31px;
+            }
+
+            .application-id {
+                font-size: 21px;
+            }
+
+            .success-actions {
+                flex-direction: column;
+            }
+
+            .success-actions .btn {
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <main class="success-page">
+
+        <section class="success-card">
+
+            <div class="success-icon">
+                ✓
+            </div>
+
+            <h1>
+                Payment Submitted Successfully
+            </h1>
+
+            <p>
+                Your payment details have been received successfully.
+                Your payment is now pending verification by our team.
+                Once your payment is verified, your application will
+                move to the review process.
+            </p>
+
+
+            <div class="application-id-box">
+
+                <span class="application-id-label">
+                    Your Application ID
+                </span>
+
+                <span
+                    class="application-id"
+                    id="successApplicationId"
+                >
+                    Loading...
+                </span>
+
+            </div>
+
+
+            <div class="status-box">
+
+                <strong>
+                    Current Status
+                </strong>
+
+                <span id="successStatus">
+                    Payment Verification Pending
+                </span>
+
+            </div>
+
+
+            <div class="success-actions">
+
+                <a
+                    href="status.html"
+                    class="btn btn-primary"
+                >
+                    Check Application Status
+                </a>
+
+                <a
+                    href="contact.html"
+                    class="btn btn-outline"
+                >
+                    Contact Support
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script>
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
+
+                const applicationId =
+                    sessionStorage.getItem(
+                        "applicationId"
+                    );
+
+
+                const idElement =
+                    document.getElementById(
+                        "successApplicationId"
+                    );
+
+
+                if (!applicationId) {
+
+                    idElement.textContent =
+                        "Not available";
+
+                    return;
+
+                }
+
+
+                idElement.textContent =
+                    "UST-" +
+                    String(applicationId)
+                        .padStart(6, "0");
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>
